@@ -82,6 +82,46 @@ const graphEdges = [
   { from: "E", to: "F", weight: 1 },
 ];
 
+class DisjointSet {
+  constructor(values) {
+    this.parent = {};
+    this.rank = {};
+
+    for (const value of values) {
+      this.parent[value] = value;
+      this.rank[value] = 0;
+    }
+  }
+
+  find(value) {
+    if (this.parent[value] !== value) {
+      this.parent[value] = this.find(this.parent[value]);
+    }
+
+    return this.parent[value];
+  }
+
+  union(first, second) {
+    const firstRoot = this.find(first);
+    const secondRoot = this.find(second);
+
+    if (firstRoot === secondRoot) {
+      return false;
+    }
+
+    if (this.rank[firstRoot] < this.rank[secondRoot]) {
+      this.parent[firstRoot] = secondRoot;
+    } else if (this.rank[firstRoot] > this.rank[secondRoot]) {
+      this.parent[secondRoot] = firstRoot;
+    } else {
+      this.parent[secondRoot] = firstRoot;
+      this.rank[firstRoot]++;
+    }
+
+    return true;
+  }
+}
+
 class MinHeap {
   constructor(compare) {
     this.items = [];
@@ -1066,6 +1106,28 @@ function primMst(startNodeId = "A") {
   return { mstEdges, totalWeight, visited };
 }
 
+function kruskalMst() {
+  const dsu = new DisjointSet(graphNodes.map((node) => node.id));
+  const sortedEdges = [...graphEdges].sort((first, second) => first.weight - second.weight);
+  const mstEdges = [];
+  let totalWeight = 0;
+
+  for (const edge of sortedEdges) {
+    if (!dsu.union(edge.from, edge.to)) {
+      continue;
+    }
+
+    mstEdges.push(edge);
+    totalWeight += edge.weight;
+
+    if (mstEdges.length === graphNodes.length - 1) {
+      break;
+    }
+  }
+
+  return { mstEdges, totalWeight };
+}
+
 async function runGraphAlgorithm() {
   graphStatusStat.textContent = "Running";
   runGraphButton.disabled = true;
@@ -1073,26 +1135,30 @@ async function runGraphAlgorithm() {
   graphAlgorithmSelect.disabled = true;
 
   const selectedAlgorithm = graphAlgorithmSelect.value;
+  const graphAlgorithmLabel = graphAlgorithmSelect.options[graphAlgorithmSelect.selectedIndex].textContent;
+  let result = null;
 
   if (selectedAlgorithm === "prim") {
-    const result = primMst();
-    selectedGraphEdges = new Set();
-    selectedGraphNodes = new Set(["A"]);
-
-    for (const edge of result.mstEdges) {
-      selectedGraphEdges.add(makeEdgeKey(edge.from, edge.to));
-      selectedGraphNodes.add(edge.from);
-      selectedGraphNodes.add(edge.to);
-      renderGraph();
-      await sleep(getAnimationDelay() * 4);
-    }
-
-    graphAlgorithmStat.textContent = "Prim's MST";
-    graphStatusStat.textContent = "MST complete";
-    graphWeightStat.textContent = String(result.totalWeight);
-    graphEdgesStat.textContent = String(result.mstEdges.length);
+    result = primMst();
+  } else if (selectedAlgorithm === "kruskal") {
+    result = kruskalMst();
   }
 
+  selectedGraphEdges = new Set();
+  selectedGraphNodes = new Set(selectedAlgorithm === "prim" ? ["A"] : []);
+
+  for (const edge of result.mstEdges) {
+    selectedGraphEdges.add(makeEdgeKey(edge.from, edge.to));
+    selectedGraphNodes.add(edge.from);
+    selectedGraphNodes.add(edge.to);
+    renderGraph();
+    await sleep(getAnimationDelay() * 4);
+  }
+
+  graphAlgorithmStat.textContent = graphAlgorithmLabel;
+  graphStatusStat.textContent = "MST complete";
+  graphWeightStat.textContent = String(result.totalWeight);
+  graphEdgesStat.textContent = String(result.mstEdges.length);
   runGraphButton.disabled = false;
   resetGraphButton.disabled = false;
   graphAlgorithmSelect.disabled = false;
@@ -1101,7 +1167,7 @@ async function runGraphAlgorithm() {
 function resetGraphLab() {
   selectedGraphEdges = new Set();
   selectedGraphNodes = new Set();
-  graphAlgorithmStat.textContent = "Prim's MST";
+  graphAlgorithmStat.textContent = graphAlgorithmSelect.options[graphAlgorithmSelect.selectedIndex].textContent;
   graphStatusStat.textContent = "Ready";
   graphWeightStat.textContent = "0";
   graphEdgesStat.textContent = "0";
