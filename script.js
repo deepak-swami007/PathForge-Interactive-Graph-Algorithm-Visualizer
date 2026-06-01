@@ -30,6 +30,7 @@ const algorithmInfoText = {
   dfs: "DFS explores as deep as possible before backtracking. It is useful for traversal and maze-style search, but it does not guarantee the shortest path.",
   dijkstra: "Dijkstra finds the lowest-cost path in a weighted grid. It is ideal when some cells are more expensive than others.",
   astar: "A* combines real path cost with Manhattan distance, so it usually reaches the target with fewer explored cells than Dijkstra.",
+  bellmanFord: "Bellman-Ford relaxes all edges repeatedly. It is slower than Dijkstra here, but it is important because it can handle negative edges in graph problems.",
 };
 
 const speedDelay = {
@@ -43,7 +44,10 @@ const algorithmLabels = {
   dfs: "DFS",
   dijkstra: "Dijkstra",
   astar: "A*",
+  bellmanFord: "Bellman-Ford",
 };
+
+const gridAlgorithms = ["bfs", "dfs", "dijkstra", "astar", "bellmanFord"];
 
 class MinHeap {
   constructor(compare) {
@@ -301,7 +305,7 @@ function setControlsDisabled(isDisabled) {
 function renderComparisonTable() {
   comparisonBody.innerHTML = "";
 
-  for (const algorithm of ["bfs", "dfs", "dijkstra", "astar"]) {
+  for (const algorithm of gridAlgorithms) {
     const stats = comparisonStats[algorithm];
     const row = document.createElement("tr");
 
@@ -578,6 +582,83 @@ function astar() {
   return { visitOrder, path, cost: Number.isFinite(cost) ? cost : 0 };
 }
 
+function getGridEdges() {
+  const edges = [];
+  const directions = [
+    { row: -1, col: 0 },
+    { row: 0, col: 1 },
+    { row: 1, col: 0 },
+    { row: 0, col: -1 },
+  ];
+
+  for (let row = 0; row < ROWS; row++) {
+    for (let col = 0; col < COLS; col++) {
+      if (!canVisit(row, col)) {
+        continue;
+      }
+
+      for (const direction of directions) {
+        const nextRow = row + direction.row;
+        const nextCol = col + direction.col;
+
+        if (!isInsideGrid(nextRow, nextCol) || !canVisit(nextRow, nextCol)) {
+          continue;
+        }
+
+        edges.push({
+          from: { row, col },
+          to: { row: nextRow, col: nextCol },
+          weight: getCellCost(nextRow, nextCol),
+        });
+      }
+    }
+  }
+
+  return edges;
+}
+
+function bellmanFord() {
+  const distances = [];
+  const parent = {};
+  const visitOrder = [];
+  const edges = getGridEdges();
+
+  for (let row = 0; row < ROWS; row++) {
+    distances.push(Array(COLS).fill(Infinity));
+  }
+
+  distances[startCell.row][startCell.col] = 0;
+
+  for (let iteration = 0; iteration < ROWS * COLS - 1; iteration++) {
+    let changed = false;
+
+    for (const edge of edges) {
+      const fromDistance = distances[edge.from.row][edge.from.col];
+
+      if (!Number.isFinite(fromDistance)) {
+        continue;
+      }
+
+      const nextDistance = fromDistance + edge.weight;
+
+      if (nextDistance < distances[edge.to.row][edge.to.col]) {
+        distances[edge.to.row][edge.to.col] = nextDistance;
+        parent[makeKey(edge.to.row, edge.to.col)] = edge.from;
+        visitOrder.push(edge.to);
+        changed = true;
+      }
+    }
+
+    if (!changed) {
+      break;
+    }
+  }
+
+  const path = buildPath(parent);
+  const cost = distances[targetCell.row][targetCell.col];
+  return { visitOrder, path, cost: Number.isFinite(cost) ? cost : 0 };
+}
+
 function buildPath(parent) {
   const path = [];
   let current = targetCell;
@@ -634,8 +715,10 @@ function runAlgorithmByName(selectedAlgorithm) {
     result = dfs();
   } else if (selectedAlgorithm === "dijkstra") {
     result = dijkstra();
-  } else {
+  } else if (selectedAlgorithm === "astar") {
     result = astar();
+  } else {
+    result = bellmanFord();
   }
 
   const endTime = performance.now();
@@ -675,9 +758,7 @@ async function runAllAlgorithms() {
   clearComparisonTable();
   setControlsDisabled(true);
 
-  const algorithms = ["bfs", "dfs", "dijkstra", "astar"];
-
-  for (const algorithm of algorithms) {
+  for (const algorithm of gridAlgorithms) {
     algorithmSelect.value = algorithm;
     updateAlgorithmLabel();
     statusStat.textContent = `Running ${algorithmLabels[algorithm]}`;
