@@ -146,6 +146,55 @@ function bfs() {
   return { visitOrder, path };
 }
 
+function dfs() {
+  const stack = [startCell];
+  const visited = [];
+  const parent = {};
+  const visitOrder = [];
+
+  for (let row = 0; row < ROWS; row++) {
+    visited.push(Array(COLS).fill(false));
+  }
+
+  visited[startCell.row][startCell.col] = true;
+
+  const directions = [
+    { row: -1, col: 0 },
+    { row: 0, col: 1 },
+    { row: 1, col: 0 },
+    { row: 0, col: -1 },
+  ];
+
+  while (stack.length > 0) {
+    const current = stack.pop();
+    visitOrder.push(current);
+
+    if (isSameCell(current, targetCell)) {
+      break;
+    }
+
+    for (const direction of directions) {
+      const nextRow = current.row + direction.row;
+      const nextCol = current.col + direction.col;
+
+      if (!isInsideGrid(nextRow, nextCol)) {
+        continue;
+      }
+
+      if (visited[nextRow][nextCol] || !canVisit(nextRow, nextCol)) {
+        continue;
+      }
+
+      visited[nextRow][nextCol] = true;
+      parent[makeKey(nextRow, nextCol)] = current;
+      stack.push({ row: nextRow, col: nextCol });
+    }
+  }
+
+  const path = buildPath(parent);
+  return { visitOrder, path };
+}
+
 function buildPath(parent) {
   const path = [];
   let current = targetCell;
@@ -185,13 +234,13 @@ async function runSelectedAlgorithm() {
 
   const selectedAlgorithm = algorithmSelect.value;
 
-  if (selectedAlgorithm !== "bfs") {
+  if (selectedAlgorithm !== "bfs" && selectedAlgorithm !== "dfs") {
     statusStat.textContent = "This algorithm comes in a later checkpoint";
     runButton.disabled = false;
     return;
   }
 
-  const result = bfs();
+  const result = selectedAlgorithm === "bfs" ? bfs() : dfs();
   visitedStat.textContent = String(result.visitOrder.length);
   pathStat.textContent = String(Math.max(0, result.path.length - 1));
 
