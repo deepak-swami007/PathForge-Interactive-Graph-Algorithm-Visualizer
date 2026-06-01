@@ -13,6 +13,7 @@ const pathStat = document.getElementById("pathStat");
 const costStat = document.getElementById("costStat");
 const runtimeStat = document.getElementById("runtimeStat");
 const algorithmInfo = document.getElementById("algorithmInfo");
+const comparisonBody = document.getElementById("comparisonBody");
 const runButton = document.getElementById("runBtn");
 const loadPresetButton = document.getElementById("loadPresetBtn");
 const clearPathButton = document.getElementById("clearPathBtn");
@@ -21,6 +22,7 @@ const resetButton = document.getElementById("resetBtn");
 let startCell = { row: 3, col: 4 };
 let targetCell = { row: 10, col: 15 };
 let gridState = [];
+let comparisonStats = {};
 
 const algorithmInfoText = {
   bfs: "BFS explores level by level and finds the shortest path when every move has the same cost.",
@@ -33,6 +35,13 @@ const speedDelay = {
   fast: 4,
   normal: 12,
   slow: 40,
+};
+
+const algorithmLabels = {
+  bfs: "BFS",
+  dfs: "DFS",
+  dijkstra: "Dijkstra",
+  astar: "A*",
 };
 
 class MinHeap {
@@ -274,6 +283,31 @@ function resetStats() {
   pathStat.textContent = "0";
   costStat.textContent = "0";
   runtimeStat.textContent = "0 ms";
+}
+
+function renderComparisonTable() {
+  comparisonBody.innerHTML = "";
+
+  for (const algorithm of ["bfs", "dfs", "dijkstra", "astar"]) {
+    const stats = comparisonStats[algorithm];
+    const row = document.createElement("tr");
+
+    row.innerHTML = `
+      <td>${algorithmLabels[algorithm]}</td>
+      <td>${stats ? stats.status : "-"}</td>
+      <td>${stats ? stats.visited : "-"}</td>
+      <td>${stats ? stats.length : "-"}</td>
+      <td>${stats ? stats.cost : "-"}</td>
+      <td>${stats ? stats.runtime : "-"}</td>
+    `;
+
+    comparisonBody.appendChild(row);
+  }
+}
+
+function clearComparisonTable() {
+  comparisonStats = {};
+  renderComparisonTable();
 }
 
 function getAnimationDelay() {
@@ -594,9 +628,22 @@ async function runSelectedAlgorithm() {
   const runtime = endTime - startTime;
 
   visitedStat.textContent = String(result.visitOrder.length);
-  pathStat.textContent = String(Math.max(0, result.path.length - 1));
-  costStat.textContent = String(result.cost || Math.max(0, result.path.length - 1));
-  runtimeStat.textContent = `${runtime.toFixed(2)} ms`;
+  const pathLength = Math.max(0, result.path.length - 1);
+  const pathCost = result.cost || pathLength;
+  const runtimeText = `${runtime.toFixed(2)} ms`;
+  const statusText = result.path.length > 0 ? "Path found" : "No path";
+
+  pathStat.textContent = String(pathLength);
+  costStat.textContent = String(pathCost);
+  runtimeStat.textContent = runtimeText;
+  comparisonStats[selectedAlgorithm] = {
+    status: statusText,
+    visited: result.visitOrder.length,
+    length: pathLength,
+    cost: pathCost,
+    runtime: runtimeText,
+  };
+  renderComparisonTable();
 
   const delay = getAnimationDelay();
   await animateCells(result.visitOrder, "visited", delay);
@@ -685,6 +732,7 @@ runButton.addEventListener("click", runSelectedAlgorithm);
 
 loadPresetButton.addEventListener("click", () => {
   applyPreset(presetSelect.value);
+  clearComparisonTable();
 });
 
 clearPathButton.addEventListener("click", () => {
@@ -696,8 +744,10 @@ clearPathButton.addEventListener("click", () => {
 resetButton.addEventListener("click", () => {
   createGrid();
   resetStats();
+  clearComparisonTable();
   statusStat.textContent = "Ready";
 });
 
 createGrid();
 updateAlgorithmLabel();
+renderComparisonTable();
