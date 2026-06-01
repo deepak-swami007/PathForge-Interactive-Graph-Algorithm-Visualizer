@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GraphX Rescue</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="app-header">
+    <div>
+      <p class="eyebrow">2D Graph Algorithm Visualizer</p>
+      <h1>GraphX Rescue</h1>
+      <p class="subtitle">A rescue-themed DSA visualizer for pathfinding and graph algorithms.</p>
+    </div>
+  </header>
+
+  <main class="app-shell">
+    <section class="panel controls-panel" aria-labelledby="controls-title">
+      <h2 id="controls-title">Controls</h2>
+      <div class="control-group">
+        <label for="algorithm">Algorithm</label>
+        <select id="algorithm">
+          <option value="bfs">BFS</option>
+          <option value="dfs">DFS</option>
+          <option value="dijkstra">Dijkstra</option>
+          <option value="astar">A*</option>
+        </select>
+      </div>
+      <div class="button-row">
+        <button id="runBtn" type="button">Run</button>
+        <button id="resetBtn" type="button">Reset</button>
+      </div>
+    </section>
+
+    <section class="workspace" aria-labelledby="grid-title">
+      <div class="workspace-header">
+        <div>
+          <h2 id="grid-title">Rescue Grid</h2>
+          <p>Start with a simple grid. Next step: walls, bombs, weights, and path animation.</p>
+        </div>
+        <div class="legend" aria-label="Grid legend">
+          <span><i class="legend-box start"></i>Start</span>
+          <span><i class="legend-box target"></i>Target</span>
+          <span><i class="legend-box wall"></i>Blocked</span>
+          <span><i class="legend-box bomb"></i>Bomb</span>
+        </div>
+      </div>
+      <div id="grid" class="grid" aria-label="Pathfinding grid"></div>
+    </section>
+
+    <section class="panel stats-panel" aria-labelledby="stats-title">
+      <h2 id="stats-title">Stats</h2>
+      <dl>
+        <div>
+          <dt>Mode</dt>
+          <dd id="modeStat">Grid Rescue</dd>
+        </div>
+        <div>
+          <dt>Algorithm</dt>
+          <dd id="algorithmStat">BFS</dd>
+        </div>
+        <div>
+          <dt>Status</dt>
+          <dd id="statusStat">Ready</dd>
+        </div>
+      </dl>
+    </section>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
