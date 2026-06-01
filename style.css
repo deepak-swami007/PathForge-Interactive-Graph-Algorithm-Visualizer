@@ -119,7 +119,8 @@ button:hover {
   gap: 10px;
 }
 
-#resetBtn {
+#resetBtn,
+#clearPathBtn {
   background: #ffffff;
   color: var(--text);
   border-color: var(--line);
@@ -220,6 +221,25 @@ button:hover {
 
 .cell.path {
   background: #22c55e;
+}
+
+.info-box {
+  margin-top: 18px;
+  padding: 14px;
+  background: #f8fafc;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.info-box h3 {
+  margin: 0 0 6px;
+  font-size: 15px;
+}
+
+.info-box p {
+  margin-bottom: 0;
+  color: var(--muted);
+  line-height: 1.5;
 }
 
 .stats-panel dl {

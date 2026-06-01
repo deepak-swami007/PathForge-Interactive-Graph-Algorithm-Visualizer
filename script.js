@@ -4,17 +4,33 @@ const COLS = 20;
 const gridElement = document.getElementById("grid");
 const algorithmSelect = document.getElementById("algorithm");
 const cellToolSelect = document.getElementById("cellTool");
+const speedSelect = document.getElementById("speed");
 const algorithmStat = document.getElementById("algorithmStat");
 const statusStat = document.getElementById("statusStat");
 const visitedStat = document.getElementById("visitedStat");
 const pathStat = document.getElementById("pathStat");
 const costStat = document.getElementById("costStat");
+const algorithmInfo = document.getElementById("algorithmInfo");
 const runButton = document.getElementById("runBtn");
+const clearPathButton = document.getElementById("clearPathBtn");
 const resetButton = document.getElementById("resetBtn");
 
 let startCell = { row: 3, col: 4 };
 let targetCell = { row: 10, col: 15 };
 let gridState = [];
+
+const algorithmInfoText = {
+  bfs: "BFS explores level by level and finds the shortest path when every move has the same cost.",
+  dfs: "DFS explores as deep as possible before backtracking. It is useful for traversal and maze-style search, but it does not guarantee the shortest path.",
+  dijkstra: "Dijkstra finds the lowest-cost path in a weighted grid. It is ideal when some cells are more expensive than others.",
+  astar: "A* combines real path cost with Manhattan distance, so it usually reaches the target with fewer explored cells than Dijkstra.",
+};
+
+const speedDelay = {
+  fast: 4,
+  normal: 12,
+  slow: 40,
+};
 
 function buildInitialState() {
   gridState = [];
@@ -79,6 +95,10 @@ function resetStats() {
   visitedStat.textContent = "0";
   pathStat.textContent = "0";
   costStat.textContent = "0";
+}
+
+function getAnimationDelay() {
+  return speedDelay[speedSelect.value] || speedDelay.normal;
 }
 
 function sleep(ms) {
@@ -393,8 +413,9 @@ async function runSelectedAlgorithm() {
   pathStat.textContent = String(Math.max(0, result.path.length - 1));
   costStat.textContent = String(result.cost || Math.max(0, result.path.length - 1));
 
-  await animateCells(result.visitOrder, "visited", 12);
-  await animateCells(result.path, "path", 24);
+  const delay = getAnimationDelay();
+  await animateCells(result.visitOrder, "visited", delay);
+  await animateCells(result.path, "path", delay * 2);
 
   statusStat.textContent = result.path.length > 0 ? "Path found" : "No path found";
   runButton.disabled = false;
@@ -422,6 +443,7 @@ function createGrid() {
 function updateAlgorithmLabel() {
   const selectedOption = algorithmSelect.options[algorithmSelect.selectedIndex];
   algorithmStat.textContent = selectedOption.textContent;
+  algorithmInfo.textContent = algorithmInfoText[algorithmSelect.value];
 }
 
 algorithmSelect.addEventListener("change", updateAlgorithmLabel);
@@ -476,6 +498,12 @@ gridElement.addEventListener("click", (event) => {
 
 runButton.addEventListener("click", runSelectedAlgorithm);
 
+clearPathButton.addEventListener("click", () => {
+  clearAlgorithmPaint();
+  resetStats();
+  statusStat.textContent = "Visualization cleared";
+});
+
 resetButton.addEventListener("click", () => {
   createGrid();
   resetStats();
@@ -483,3 +511,4 @@ resetButton.addEventListener("click", () => {
 });
 
 createGrid();
+updateAlgorithmLabel();

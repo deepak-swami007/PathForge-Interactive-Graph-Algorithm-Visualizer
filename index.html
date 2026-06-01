@@ -38,8 +38,17 @@
           <option value="erase">Erase</option>
         </select>
       </div>
+      <div class="control-group">
+        <label for="speed">Animation Speed</label>
+        <select id="speed">
+          <option value="fast">Fast</option>
+          <option value="normal" selected>Normal</option>
+          <option value="slow">Slow</option>
+        </select>
+      </div>
       <div class="button-row">
         <button id="runBtn" type="button">Run</button>
+        <button id="clearPathBtn" type="button">Clear Path</button>
         <button id="resetBtn" type="button">Reset</button>
       </div>
     </section>
@@ -59,6 +68,10 @@
         </div>
       </div>
       <div id="grid" class="grid" aria-label="Pathfinding grid"></div>
+      <article class="info-box" aria-labelledby="algorithm-info-title">
+        <h3 id="algorithm-info-title">Algorithm Notes</h3>
+        <p id="algorithmInfo">BFS explores level by level and finds the shortest path when every move has the same cost.</p>
+      </article>
     </section>
 
     <section class="panel stats-panel" aria-labelledby="stats-title">
