@@ -121,6 +121,36 @@ function renderGraphComparisonTable() {
   }
 }
 
+function clearGraphMatrixOutput() {
+  graphMatrixOutput.textContent = "Run Floyd-Warshall to generate the matrix.";
+}
+
+function renderDistanceMatrix(nodeIds, distances) {
+  const table = document.createElement("table");
+  table.className = "matrix-table";
+  const thead = document.createElement("thead");
+  const tbody = document.createElement("tbody");
+  const headerRow = document.createElement("tr");
+
+  headerRow.innerHTML = `<th>From / To</th>${nodeIds.map((id) => `<th>${id}</th>`).join("")}`;
+  thead.appendChild(headerRow);
+
+  for (const fromNode of nodeIds) {
+    const row = document.createElement("tr");
+    const values = nodeIds.map((toNode) => {
+      const distance = distances[fromNode][toNode];
+      return `<td>${Number.isFinite(distance) ? distance : "∞"}</td>`;
+    }).join("");
+    row.innerHTML = `<td>${fromNode}</td>${values}`;
+    tbody.appendChild(row);
+  }
+
+  table.appendChild(thead);
+  table.appendChild(tbody);
+  graphMatrixOutput.innerHTML = "";
+  graphMatrixOutput.appendChild(table);
+}
+
 function buildGraphAdjacency() {
   const adjacency = {};
 
@@ -264,6 +294,38 @@ function kosarajuScc() {
   return { components };
 }
 
+function floydWarshall() {
+  const nodeIds = graphNodes.map((node) => node.id);
+  const distances = {};
+
+  for (const fromNode of nodeIds) {
+    distances[fromNode] = {};
+
+    for (const toNode of nodeIds) {
+      distances[fromNode][toNode] = fromNode === toNode ? 0 : Infinity;
+    }
+  }
+
+  for (const edge of graphEdges) {
+    distances[edge.from][edge.to] = Math.min(distances[edge.from][edge.to], edge.weight);
+    distances[edge.to][edge.from] = Math.min(distances[edge.to][edge.from], edge.weight);
+  }
+
+  for (const midNode of nodeIds) {
+    for (const fromNode of nodeIds) {
+      for (const toNode of nodeIds) {
+        const throughMid = distances[fromNode][midNode] + distances[midNode][toNode];
+
+        if (throughMid < distances[fromNode][toNode]) {
+          distances[fromNode][toNode] = throughMid;
+        }
+      }
+    }
+  }
+
+  return { nodeIds, distances };
+}
+
 async function runGraphAlgorithm() {
   graphStatusStat.textContent = "Running";
   runGraphButton.disabled = true;
@@ -311,6 +373,8 @@ async function executeGraphAlgorithm(selectedAlgorithm) {
     result = kruskalMst();
   } else if (selectedAlgorithm === "kosaraju") {
     result = kosarajuScc();
+  } else if (selectedAlgorithm === "floydWarshall") {
+    result = floydWarshall();
   }
 
   const runtime = performance.now() - startTime;
@@ -342,6 +406,28 @@ async function executeGraphAlgorithm(selectedAlgorithm) {
       status: "SCC complete",
       result: `${result.components.length} SCCs`,
       items: `${nodeCount} nodes`,
+      runtime: runtimeText,
+    };
+    renderGraphComparisonTable();
+    return;
+  }
+
+  if (selectedAlgorithm === "floydWarshall") {
+    selectedGraphEdges = new Set();
+    selectedGraphNodes = new Set(graphNodes.map((node) => node.id));
+    sccGroupByNode = {};
+    renderGraph();
+    renderDistanceMatrix(result.nodeIds, result.distances);
+
+    graphAlgorithmStat.textContent = graphAlgorithmLabel;
+    graphStatusStat.textContent = "Matrix complete";
+    graphWeightStat.textContent = `${result.nodeIds.length}x${result.nodeIds.length}`;
+    graphEdgesStat.textContent = `${graphEdges.length} edges`;
+    graphRuntimeStat.textContent = runtimeText;
+    graphComparisonStats[selectedAlgorithm] = {
+      status: "Matrix complete",
+      result: `${result.nodeIds.length}x${result.nodeIds.length}`,
+      items: `${graphEdges.length} edges`,
       runtime: runtimeText,
     };
     renderGraphComparisonTable();
@@ -385,4 +471,5 @@ function resetGraphLab() {
   graphEdgesStat.textContent = "0";
   graphRuntimeStat.textContent = "0 ms";
   renderGraph();
+  clearGraphMatrixOutput();
 }

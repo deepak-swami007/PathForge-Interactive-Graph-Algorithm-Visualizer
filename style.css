@@ -276,6 +276,22 @@ tbody tr:last-child td {
   border-bottom: 0;
 }
 
+.matrix-output {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.matrix-table th,
+.matrix-table td {
+  text-align: center;
+}
+
+.matrix-table th:first-child,
+.matrix-table td:first-child {
+  color: var(--muted);
+  font-weight: 700;
+}
+
 .graph-lab {
   grid-column: 1 / -1;
 }

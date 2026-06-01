@@ -152,6 +152,7 @@
               <option value="prim">Prim's MST</option>
               <option value="kruskal">Kruskal's MST</option>
               <option value="kosaraju">Kosaraju SCC</option>
+              <option value="floydWarshall">Floyd-Warshall</option>
             </select>
           </div>
           <button id="runGraphBtn" type="button">Run Graph</button>
@@ -203,6 +204,10 @@
             <tbody id="graphComparisonBody"></tbody>
           </table>
         </div>
+      </section>
+      <section class="comparison-box graph-matrix-box" aria-labelledby="graph-matrix-title">
+        <h3 id="graph-matrix-title">All-Pairs Distance Matrix</h3>
+        <div id="graphMatrixOutput" class="matrix-output">Run Floyd-Warshall to generate the matrix.</div>
       </section>
     </section>
   </main>

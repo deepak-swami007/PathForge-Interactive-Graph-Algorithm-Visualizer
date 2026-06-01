@@ -22,6 +22,7 @@ const graphWeightStat = document.getElementById("graphWeightStat");
 const graphEdgesStat = document.getElementById("graphEdgesStat");
 const graphRuntimeStat = document.getElementById("graphRuntimeStat");
 const graphComparisonBody = document.getElementById("graphComparisonBody");
+const graphMatrixOutput = document.getElementById("graphMatrixOutput");
 const runButton = document.getElementById("runBtn");
 const runAllButton = document.getElementById("runAllBtn");
 const loadPresetButton = document.getElementById("loadPresetBtn");
@@ -102,4 +103,5 @@ const graphAlgorithmLabels = {
   prim: "Prim's MST",
   kruskal: "Kruskal's MST",
   kosaraju: "Kosaraju SCC",
+  floydWarshall: "Floyd-Warshall",
 };
