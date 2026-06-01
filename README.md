@@ -12,6 +12,7 @@ HTML + CSS + Vanilla JavaScript
 
 - Grid lab with start, target, blocked cells, bombs, and weighted zones.
 - Pathfinding algorithms such as BFS, DFS, Dijkstra, and A*.
+- Demo presets for weighted detours, blocked mazes, and bomb traps.
 - Graph algorithms such as Bellman-Ford, Floyd-Warshall, Prim, Kruskal, Kosaraju, and Ford-Fulkerson.
 - Visual stats for visited nodes, path length, risk cost, and runtime.
 - Free deployment through GitHub Pages.

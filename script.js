@@ -5,6 +5,7 @@ const gridElement = document.getElementById("grid");
 const algorithmSelect = document.getElementById("algorithm");
 const cellToolSelect = document.getElementById("cellTool");
 const speedSelect = document.getElementById("speed");
+const presetSelect = document.getElementById("preset");
 const algorithmStat = document.getElementById("algorithmStat");
 const statusStat = document.getElementById("statusStat");
 const visitedStat = document.getElementById("visitedStat");
@@ -12,6 +13,7 @@ const pathStat = document.getElementById("pathStat");
 const costStat = document.getElementById("costStat");
 const algorithmInfo = document.getElementById("algorithmInfo");
 const runButton = document.getElementById("runBtn");
+const loadPresetButton = document.getElementById("loadPresetBtn");
 const clearPathButton = document.getElementById("clearPathBtn");
 const resetButton = document.getElementById("resetBtn");
 
@@ -44,6 +46,98 @@ function buildInitialState() {
 
     gridState.push(currentRow);
   }
+}
+
+function placePresetCells(cells, cellType) {
+  for (const cell of cells) {
+    if (isInsideGrid(cell.row, cell.col)) {
+      gridState[cell.row][cell.col] = cellType;
+    }
+  }
+}
+
+function applyPreset(presetName) {
+  buildInitialState();
+  clearAlgorithmPaint();
+  resetStats();
+
+  if (presetName === "clean") {
+    startCell = { row: 3, col: 4 };
+    targetCell = { row: 10, col: 15 };
+    refreshGridPaint();
+    statusStat.textContent = "Clean grid loaded";
+    return;
+  }
+
+  if (presetName === "weighted-detour") {
+    startCell = { row: 6, col: 2 };
+    targetCell = { row: 6, col: 17 };
+
+    const weightedCells = [];
+
+    for (let col = 5; col <= 14; col++) {
+      weightedCells.push({ row: 6, col });
+      weightedCells.push({ row: 7, col });
+    }
+
+    placePresetCells(weightedCells, "weight");
+    statusStat.textContent = "Weighted detour loaded";
+  }
+
+  if (presetName === "blocked-maze") {
+    startCell = { row: 2, col: 2 };
+    targetCell = { row: 11, col: 17 };
+
+    const walls = [];
+
+    for (let row = 1; row <= 11; row++) {
+      if (row !== 5) {
+        walls.push({ row, col: 6 });
+      }
+    }
+
+    for (let row = 2; row <= 12; row++) {
+      if (row !== 9) {
+        walls.push({ row, col: 12 });
+      }
+    }
+
+    for (let col = 7; col <= 11; col++) {
+      walls.push({ row: 5, col });
+    }
+
+    placePresetCells(walls, "wall");
+    statusStat.textContent = "Blocked maze loaded";
+  }
+
+  if (presetName === "bomb-trap") {
+    startCell = { row: 10, col: 2 };
+    targetCell = { row: 3, col: 17 };
+
+    const bombs = [
+      { row: 7, col: 7 },
+      { row: 7, col: 8 },
+      { row: 7, col: 9 },
+      { row: 6, col: 10 },
+      { row: 5, col: 11 },
+      { row: 4, col: 12 },
+    ];
+    const walls = [];
+
+    for (let col = 4; col <= 15; col++) {
+      if (col !== 9) {
+        walls.push({ row: 8, col });
+      }
+    }
+
+    placePresetCells(bombs, "bomb");
+    placePresetCells(walls, "wall");
+    statusStat.textContent = "Bomb trap loaded";
+  }
+
+  gridState[startCell.row][startCell.col] = "empty";
+  gridState[targetCell.row][targetCell.col] = "empty";
+  refreshGridPaint();
 }
 
 function isSameCell(first, second) {
@@ -497,6 +591,10 @@ gridElement.addEventListener("click", (event) => {
 });
 
 runButton.addEventListener("click", runSelectedAlgorithm);
+
+loadPresetButton.addEventListener("click", () => {
+  applyPreset(presetSelect.value);
+});
 
 clearPathButton.addEventListener("click", () => {
   clearAlgorithmPaint();
