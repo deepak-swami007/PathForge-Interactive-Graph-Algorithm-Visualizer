@@ -99,9 +99,22 @@ const directedGraphEdges = [
   { from: "B", to: "D" },
 ];
 
+const flowGraphEdges = [
+  { from: "A", to: "B", capacity: 10 },
+  { from: "A", to: "D", capacity: 8 },
+  { from: "B", to: "C", capacity: 5 },
+  { from: "B", to: "D", capacity: 2 },
+  { from: "B", to: "E", capacity: 4 },
+  { from: "D", to: "E", capacity: 10 },
+  { from: "E", to: "C", capacity: 7 },
+  { from: "C", to: "F", capacity: 10 },
+  { from: "E", to: "F", capacity: 6 },
+];
+
 const graphAlgorithmLabels = {
   prim: "Prim's MST",
   kruskal: "Kruskal's MST",
   kosaraju: "Kosaraju SCC",
   floydWarshall: "Floyd-Warshall",
+  edmondsKarp: "Edmonds-Karp Max Flow",
 };

@@ -12,10 +12,13 @@ function createSvgElement(tagName) {
 
 function renderGraph() {
   graphSvg.innerHTML = "";
-  const isSccMode = graphAlgorithmSelect.value === "kosaraju" || Object.keys(sccGroupByNode).length > 0;
-  const edgesToRender = isSccMode ? directedGraphEdges : graphEdges;
+  const selectedAlgorithm = graphAlgorithmSelect.value;
+  const isSccMode = selectedAlgorithm === "kosaraju" || Object.keys(sccGroupByNode).length > 0;
+  const isFlowMode = selectedAlgorithm === "edmondsKarp";
+  const isDirectedMode = isSccMode || isFlowMode;
+  const edgesToRender = isSccMode ? directedGraphEdges : (isFlowMode ? flowGraphEdges : graphEdges);
 
-  if (isSccMode) {
+  if (isDirectedMode) {
     const defs = createSvgElement("defs");
     const marker = createSvgElement("marker");
     marker.setAttribute("id", "arrowhead");
@@ -40,7 +43,7 @@ function renderGraph() {
     const edgeKey = makeEdgeKey(edge.from, edge.to);
     const isSelected = selectedGraphEdges.has(edgeKey);
     const line = createSvgElement("line");
-    const offset = isSccMode ? 28 : 0;
+    const offset = isDirectedMode ? 28 : 0;
     const dx = toNode.x - fromNode.x;
     const dy = toNode.y - fromNode.y;
     const distance = Math.hypot(dx, dy) || 1;
@@ -53,9 +56,9 @@ function renderGraph() {
     line.setAttribute("y1", startY);
     line.setAttribute("x2", endX);
     line.setAttribute("y2", endY);
-    line.setAttribute("class", isSccMode ? "graph-edge directed" : (isSelected ? "graph-edge selected" : "graph-edge"));
+    line.setAttribute("class", isDirectedMode ? (isSelected ? "graph-edge directed selected" : "graph-edge directed") : (isSelected ? "graph-edge selected" : "graph-edge"));
 
-    if (isSccMode) {
+    if (isDirectedMode) {
       line.setAttribute("marker-end", "url(#arrowhead)");
     }
 
@@ -80,7 +83,7 @@ function renderGraph() {
     label.setAttribute("x", midX);
     label.setAttribute("y", midY + 1);
     label.setAttribute("class", "edge-label");
-    label.textContent = edge.weight;
+    label.textContent = isFlowMode ? edge.capacity : edge.weight;
     graphSvg.appendChild(label);
   }
 
@@ -326,6 +329,77 @@ function floydWarshall() {
   return { nodeIds, distances };
 }
 
+function edmondsKarp(source = "A", sink = "F") {
+  const nodeIds = graphNodes.map((node) => node.id);
+  const residual = {};
+  const usedEdges = new Set();
+
+  for (const fromNode of nodeIds) {
+    residual[fromNode] = {};
+
+    for (const toNode of nodeIds) {
+      residual[fromNode][toNode] = 0;
+    }
+  }
+
+  for (const edge of flowGraphEdges) {
+    residual[edge.from][edge.to] += edge.capacity;
+  }
+
+  let maxFlow = 0;
+  const augmentingPaths = [];
+
+  while (true) {
+    const parent = {};
+    const queue = [source];
+    parent[source] = null;
+
+    while (queue.length > 0 && parent[sink] === undefined) {
+      const current = queue.shift();
+
+      for (const nextNode of nodeIds) {
+        if (parent[nextNode] !== undefined || residual[current][nextNode] <= 0) {
+          continue;
+        }
+
+        parent[nextNode] = current;
+        queue.push(nextNode);
+      }
+    }
+
+    if (parent[sink] === undefined) {
+      break;
+    }
+
+    let bottleneck = Infinity;
+    let current = sink;
+    const path = [sink];
+
+    while (current !== source) {
+      const previous = parent[current];
+      bottleneck = Math.min(bottleneck, residual[previous][current]);
+      current = previous;
+      path.push(current);
+    }
+
+    path.reverse();
+    current = sink;
+
+    while (current !== source) {
+      const previous = parent[current];
+      residual[previous][current] -= bottleneck;
+      residual[current][previous] += bottleneck;
+      usedEdges.add(makeEdgeKey(previous, current));
+      current = previous;
+    }
+
+    maxFlow += bottleneck;
+    augmentingPaths.push({ path, bottleneck });
+  }
+
+  return { maxFlow, augmentingPaths, usedEdges };
+}
+
 async function runGraphAlgorithm() {
   graphStatusStat.textContent = "Running";
   runGraphButton.disabled = true;
@@ -375,6 +449,8 @@ async function executeGraphAlgorithm(selectedAlgorithm) {
     result = kosarajuScc();
   } else if (selectedAlgorithm === "floydWarshall") {
     result = floydWarshall();
+  } else if (selectedAlgorithm === "edmondsKarp") {
+    result = edmondsKarp();
   }
 
   const runtime = performance.now() - startTime;
@@ -428,6 +504,41 @@ async function executeGraphAlgorithm(selectedAlgorithm) {
       status: "Matrix complete",
       result: `${result.nodeIds.length}x${result.nodeIds.length}`,
       items: `${graphEdges.length} edges`,
+      runtime: runtimeText,
+    };
+    renderGraphComparisonTable();
+    return;
+  }
+
+  if (selectedAlgorithm === "edmondsKarp") {
+    selectedGraphEdges = new Set();
+    selectedGraphNodes = new Set(["A", "F"]);
+    sccGroupByNode = {};
+    clearGraphMatrixOutput();
+    renderGraph();
+
+    for (const augmentingPath of result.augmentingPaths) {
+      for (let index = 0; index < augmentingPath.path.length - 1; index++) {
+        const fromNode = augmentingPath.path[index];
+        const toNode = augmentingPath.path[index + 1];
+        selectedGraphEdges.add(makeEdgeKey(fromNode, toNode));
+        selectedGraphNodes.add(fromNode);
+        selectedGraphNodes.add(toNode);
+      }
+
+      renderGraph();
+      await sleep(getAnimationDelay() * 6);
+    }
+
+    graphAlgorithmStat.textContent = graphAlgorithmLabel;
+    graphStatusStat.textContent = "Max flow complete";
+    graphWeightStat.textContent = `Flow ${result.maxFlow}`;
+    graphEdgesStat.textContent = `${result.augmentingPaths.length} paths`;
+    graphRuntimeStat.textContent = runtimeText;
+    graphComparisonStats[selectedAlgorithm] = {
+      status: "Max flow complete",
+      result: `Flow ${result.maxFlow}`,
+      items: `${result.augmentingPaths.length} paths`,
       runtime: runtimeText,
     };
     renderGraphComparisonTable();
