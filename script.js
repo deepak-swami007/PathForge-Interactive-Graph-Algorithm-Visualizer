@@ -20,6 +20,8 @@ const graphAlgorithmStat = document.getElementById("graphAlgorithmStat");
 const graphStatusStat = document.getElementById("graphStatusStat");
 const graphWeightStat = document.getElementById("graphWeightStat");
 const graphEdgesStat = document.getElementById("graphEdgesStat");
+const graphRuntimeStat = document.getElementById("graphRuntimeStat");
+const graphComparisonBody = document.getElementById("graphComparisonBody");
 const runButton = document.getElementById("runBtn");
 const runAllButton = document.getElementById("runAllBtn");
 const loadPresetButton = document.getElementById("loadPresetBtn");
@@ -34,6 +36,7 @@ let gridState = [];
 let comparisonStats = {};
 let selectedGraphEdges = new Set();
 let selectedGraphNodes = new Set();
+let graphComparisonStats = {};
 
 const algorithmInfoText = {
   bfs: "BFS explores level by level and finds the shortest path when every move has the same cost.",
@@ -81,6 +84,11 @@ const graphEdges = [
   { from: "D", to: "E", weight: 4 },
   { from: "E", to: "F", weight: 1 },
 ];
+
+const graphAlgorithmLabels = {
+  prim: "Prim's MST",
+  kruskal: "Kruskal's MST",
+};
 
 class DisjointSet {
   constructor(values) {
@@ -1059,6 +1067,25 @@ function renderGraph() {
   }
 }
 
+function renderGraphComparisonTable() {
+  graphComparisonBody.innerHTML = "";
+
+  for (const algorithm of Object.keys(graphAlgorithmLabels)) {
+    const stats = graphComparisonStats[algorithm];
+    const row = document.createElement("tr");
+
+    row.innerHTML = `
+      <td>${graphAlgorithmLabels[algorithm]}</td>
+      <td>${stats ? stats.status : "-"}</td>
+      <td>${stats ? stats.totalWeight : "-"}</td>
+      <td>${stats ? stats.edges : "-"}</td>
+      <td>${stats ? stats.runtime : "-"}</td>
+    `;
+
+    graphComparisonBody.appendChild(row);
+  }
+}
+
 function buildGraphAdjacency() {
   const adjacency = {};
 
@@ -1137,12 +1164,16 @@ async function runGraphAlgorithm() {
   const selectedAlgorithm = graphAlgorithmSelect.value;
   const graphAlgorithmLabel = graphAlgorithmSelect.options[graphAlgorithmSelect.selectedIndex].textContent;
   let result = null;
+  const startTime = performance.now();
 
   if (selectedAlgorithm === "prim") {
     result = primMst();
   } else if (selectedAlgorithm === "kruskal") {
     result = kruskalMst();
   }
+
+  const runtime = performance.now() - startTime;
+  const runtimeText = `${runtime.toFixed(2)} ms`;
 
   selectedGraphEdges = new Set();
   selectedGraphNodes = new Set(selectedAlgorithm === "prim" ? ["A"] : []);
@@ -1159,6 +1190,14 @@ async function runGraphAlgorithm() {
   graphStatusStat.textContent = "MST complete";
   graphWeightStat.textContent = String(result.totalWeight);
   graphEdgesStat.textContent = String(result.mstEdges.length);
+  graphRuntimeStat.textContent = runtimeText;
+  graphComparisonStats[selectedAlgorithm] = {
+    status: "MST complete",
+    totalWeight: result.totalWeight,
+    edges: result.mstEdges.length,
+    runtime: runtimeText,
+  };
+  renderGraphComparisonTable();
   runGraphButton.disabled = false;
   resetGraphButton.disabled = false;
   graphAlgorithmSelect.disabled = false;
@@ -1171,6 +1210,7 @@ function resetGraphLab() {
   graphStatusStat.textContent = "Ready";
   graphWeightStat.textContent = "0";
   graphEdgesStat.textContent = "0";
+  graphRuntimeStat.textContent = "0 ms";
   renderGraph();
 }
 
@@ -1254,3 +1294,4 @@ createGrid();
 updateAlgorithmLabel();
 renderComparisonTable();
 renderGraph();
+renderGraphComparisonTable();
