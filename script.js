@@ -260,6 +260,78 @@ function dijkstra() {
   return { visitOrder, path, cost: Number.isFinite(cost) ? cost : 0 };
 }
 
+function manhattanDistance(first, second) {
+  return Math.abs(first.row - second.row) + Math.abs(first.col - second.col);
+}
+
+function astar() {
+  const gCost = [];
+  const visited = [];
+  const parent = {};
+  const visitOrder = [];
+  const openSet = [{
+    ...startCell,
+    g: 0,
+    f: manhattanDistance(startCell, targetCell),
+  }];
+
+  for (let row = 0; row < ROWS; row++) {
+    gCost.push(Array(COLS).fill(Infinity));
+    visited.push(Array(COLS).fill(false));
+  }
+
+  gCost[startCell.row][startCell.col] = 0;
+
+  const directions = [
+    { row: -1, col: 0 },
+    { row: 0, col: 1 },
+    { row: 1, col: 0 },
+    { row: 0, col: -1 },
+  ];
+
+  while (openSet.length > 0) {
+    openSet.sort((first, second) => first.f - second.f);
+    const current = openSet.shift();
+
+    if (visited[current.row][current.col]) {
+      continue;
+    }
+
+    visited[current.row][current.col] = true;
+    visitOrder.push({ row: current.row, col: current.col });
+
+    if (isSameCell(current, targetCell)) {
+      break;
+    }
+
+    for (const direction of directions) {
+      const nextRow = current.row + direction.row;
+      const nextCol = current.col + direction.col;
+
+      if (!isInsideGrid(nextRow, nextCol) || !canVisit(nextRow, nextCol)) {
+        continue;
+      }
+
+      const nextGCost = gCost[current.row][current.col] + getCellCost(nextRow, nextCol);
+
+      if (nextGCost < gCost[nextRow][nextCol]) {
+        const nextCell = { row: nextRow, col: nextCol };
+        gCost[nextRow][nextCol] = nextGCost;
+        parent[makeKey(nextRow, nextCol)] = { row: current.row, col: current.col };
+        openSet.push({
+          ...nextCell,
+          g: nextGCost,
+          f: nextGCost + manhattanDistance(nextCell, targetCell),
+        });
+      }
+    }
+  }
+
+  const path = buildPath(parent);
+  const cost = gCost[targetCell.row][targetCell.col];
+  return { visitOrder, path, cost: Number.isFinite(cost) ? cost : 0 };
+}
+
 function buildPath(parent) {
   const path = [];
   let current = targetCell;
@@ -299,7 +371,7 @@ async function runSelectedAlgorithm() {
 
   const selectedAlgorithm = algorithmSelect.value;
 
-  if (!["bfs", "dfs", "dijkstra"].includes(selectedAlgorithm)) {
+  if (!["bfs", "dfs", "dijkstra", "astar"].includes(selectedAlgorithm)) {
     statusStat.textContent = "This algorithm comes in a later checkpoint";
     runButton.disabled = false;
     return;
@@ -311,8 +383,10 @@ async function runSelectedAlgorithm() {
     result = bfs();
   } else if (selectedAlgorithm === "dfs") {
     result = dfs();
-  } else {
+  } else if (selectedAlgorithm === "dijkstra") {
     result = dijkstra();
+  } else {
+    result = astar();
   }
 
   visitedStat.textContent = String(result.visitOrder.length);
