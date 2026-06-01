@@ -123,6 +123,7 @@ button:hover {
 #clearPathBtn,
 #loadPresetBtn,
 #runAllBtn,
+#runGraphAllBtn,
 #resetGraphBtn {
   background: #ffffff;
   color: var(--text);
@@ -316,6 +317,11 @@ tbody tr:last-child td {
   stroke-width: 6;
 }
 
+.graph-edge.directed {
+  stroke: #64748b;
+  stroke-width: 3;
+}
+
 .graph-node {
   fill: #ffffff;
   stroke: var(--primary);
@@ -325,6 +331,26 @@ tbody tr:last-child td {
 .graph-node.active {
   fill: #dbeafe;
   stroke: var(--start);
+}
+
+.graph-node.scc-0 {
+  fill: #dbeafe;
+  stroke: #2563eb;
+}
+
+.graph-node.scc-1 {
+  fill: #dcfce7;
+  stroke: #16a34a;
+}
+
+.graph-node.scc-2 {
+  fill: #ffedd5;
+  stroke: #f97316;
+}
+
+.graph-node.scc-3 {
+  fill: #fce7f3;
+  stroke: #db2777;
 }
 
 .graph-label,

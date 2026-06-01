@@ -13,8 +13,8 @@ HTML + CSS + Vanilla JavaScript
 - Grid lab with start, target, blocked cells, bombs, and weighted zones.
 - Pathfinding algorithms such as BFS, DFS, Dijkstra, A*, Bellman-Ford, and Bidirectional BFS.
 - Demo presets for weighted detours, blocked mazes, and bomb traps.
-- Graph Lab with Prim's and Kruskal's minimum spanning tree algorithms.
-- Planned graph algorithms such as Floyd-Warshall, Kosaraju, and Ford-Fulkerson.
+- Graph Lab with Prim's MST, Kruskal's MST, and Kosaraju's SCC algorithm.
+- Planned graph algorithms such as Floyd-Warshall and Ford-Fulkerson.
 - Visual stats for visited nodes, path length, path cost, and runtime.
 - Free deployment through GitHub Pages.
 

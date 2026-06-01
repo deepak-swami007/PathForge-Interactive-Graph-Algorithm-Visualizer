@@ -151,14 +151,16 @@
             <select id="graphAlgorithm">
               <option value="prim">Prim's MST</option>
               <option value="kruskal">Kruskal's MST</option>
+              <option value="kosaraju">Kosaraju SCC</option>
             </select>
           </div>
           <button id="runGraphBtn" type="button">Run Graph</button>
+          <button id="runGraphAllBtn" type="button">Run Graph All</button>
           <button id="resetGraphBtn" type="button">Reset Graph</button>
         </div>
       </div>
       <div class="graph-layout">
-        <svg id="graphSvg" class="graph-svg" viewBox="0 0 640 340" role="img" aria-label="Weighted graph visualization"></svg>
+        <svg id="graphSvg" class="graph-svg" viewBox="0 0 640 340" role="img" aria-label="Graph visualization"></svg>
         <aside class="graph-result" aria-labelledby="graph-result-title">
           <h3 id="graph-result-title">Graph Result</h3>
           <dl>
@@ -171,11 +173,11 @@
               <dd id="graphStatusStat">Ready</dd>
             </div>
             <div>
-              <dt>Total Weight</dt>
+              <dt>Primary Result</dt>
               <dd id="graphWeightStat">0</dd>
             </div>
             <div>
-              <dt>Selected Edges</dt>
+              <dt>Items</dt>
               <dd id="graphEdgesStat">0</dd>
             </div>
             <div>
@@ -193,8 +195,8 @@
               <tr>
                 <th>Algorithm</th>
                 <th>Status</th>
-                <th>Total Weight</th>
-                <th>Edges</th>
+                <th>Result</th>
+                <th>Items</th>
                 <th>Runtime</th>
               </tr>
             </thead>
