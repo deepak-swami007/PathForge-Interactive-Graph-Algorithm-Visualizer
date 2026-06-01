@@ -15,6 +15,7 @@ const runtimeStat = document.getElementById("runtimeStat");
 const algorithmInfo = document.getElementById("algorithmInfo");
 const comparisonBody = document.getElementById("comparisonBody");
 const runButton = document.getElementById("runBtn");
+const runAllButton = document.getElementById("runAllBtn");
 const loadPresetButton = document.getElementById("loadPresetBtn");
 const clearPathButton = document.getElementById("clearPathBtn");
 const resetButton = document.getElementById("resetBtn");
@@ -283,6 +284,18 @@ function resetStats() {
   pathStat.textContent = "0";
   costStat.textContent = "0";
   runtimeStat.textContent = "0 ms";
+}
+
+function setControlsDisabled(isDisabled) {
+  runButton.disabled = isDisabled;
+  runAllButton.disabled = isDisabled;
+  loadPresetButton.disabled = isDisabled;
+  clearPathButton.disabled = isDisabled;
+  resetButton.disabled = isDisabled;
+  algorithmSelect.disabled = isDisabled;
+  cellToolSelect.disabled = isDisabled;
+  speedSelect.disabled = isDisabled;
+  presetSelect.disabled = isDisabled;
 }
 
 function renderComparisonTable() {
@@ -600,18 +613,19 @@ async function runSelectedAlgorithm() {
   resetStats();
   updateAlgorithmLabel();
   statusStat.textContent = "Running";
-  runButton.disabled = true;
+  setControlsDisabled(true);
 
   const selectedAlgorithm = algorithmSelect.value;
 
-  if (!["bfs", "dfs", "dijkstra", "astar"].includes(selectedAlgorithm)) {
-    statusStat.textContent = "This algorithm comes in a later checkpoint";
-    runButton.disabled = false;
-    return;
-  }
+  const runResult = runAlgorithmByName(selectedAlgorithm);
+  updateStatsFromRun(selectedAlgorithm, runResult);
+  await animateRunResult(runResult);
+  statusStat.textContent = runResult.path.length > 0 ? "Path found" : "No path found";
+  setControlsDisabled(false);
+}
 
+function runAlgorithmByName(selectedAlgorithm) {
   let result;
-
   const startTime = performance.now();
 
   if (selectedAlgorithm === "bfs") {
@@ -626,11 +640,14 @@ async function runSelectedAlgorithm() {
 
   const endTime = performance.now();
   const runtime = endTime - startTime;
+  return { ...result, runtime };
+}
 
+function updateStatsFromRun(selectedAlgorithm, result) {
   visitedStat.textContent = String(result.visitOrder.length);
   const pathLength = Math.max(0, result.path.length - 1);
   const pathCost = result.cost || pathLength;
-  const runtimeText = `${runtime.toFixed(2)} ms`;
+  const runtimeText = `${result.runtime.toFixed(2)} ms`;
   const statusText = result.path.length > 0 ? "Path found" : "No path";
 
   pathStat.textContent = String(pathLength);
@@ -644,13 +661,36 @@ async function runSelectedAlgorithm() {
     runtime: runtimeText,
   };
   renderComparisonTable();
+}
 
+async function animateRunResult(result) {
   const delay = getAnimationDelay();
   await animateCells(result.visitOrder, "visited", delay);
   await animateCells(result.path, "path", delay * 2);
+}
 
-  statusStat.textContent = result.path.length > 0 ? "Path found" : "No path found";
-  runButton.disabled = false;
+async function runAllAlgorithms() {
+  clearAlgorithmPaint();
+  resetStats();
+  clearComparisonTable();
+  setControlsDisabled(true);
+
+  const algorithms = ["bfs", "dfs", "dijkstra", "astar"];
+
+  for (const algorithm of algorithms) {
+    algorithmSelect.value = algorithm;
+    updateAlgorithmLabel();
+    statusStat.textContent = `Running ${algorithmLabels[algorithm]}`;
+
+    const result = runAlgorithmByName(algorithm);
+    updateStatsFromRun(algorithm, result);
+    clearAlgorithmPaint();
+    await animateRunResult(result);
+    await sleep(120);
+  }
+
+  statusStat.textContent = "Run All complete";
+  setControlsDisabled(false);
 }
 
 function createGrid() {
@@ -729,6 +769,8 @@ gridElement.addEventListener("click", (event) => {
 });
 
 runButton.addEventListener("click", runSelectedAlgorithm);
+
+runAllButton.addEventListener("click", runAllAlgorithms);
 
 loadPresetButton.addEventListener("click", () => {
   applyPreset(presetSelect.value);

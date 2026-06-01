@@ -121,7 +121,8 @@ button:hover {
 
 #resetBtn,
 #clearPathBtn,
-#loadPresetBtn {
+#loadPresetBtn,
+#runAllBtn {
   background: #ffffff;
   color: var(--text);
   border-color: var(--line);
