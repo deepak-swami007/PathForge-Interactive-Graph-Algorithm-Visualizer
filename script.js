@@ -6,6 +6,8 @@ const algorithmSelect = document.getElementById("algorithm");
 const cellToolSelect = document.getElementById("cellTool");
 const algorithmStat = document.getElementById("algorithmStat");
 const statusStat = document.getElementById("statusStat");
+const visitedStat = document.getElementById("visitedStat");
+const pathStat = document.getElementById("pathStat");
 const runButton = document.getElementById("runBtn");
 const resetButton = document.getElementById("resetBtn");
 
@@ -64,6 +66,142 @@ function refreshGridPaint() {
   }
 }
 
+function clearAlgorithmPaint() {
+  const cells = gridElement.querySelectorAll(".cell");
+
+  for (const cell of cells) {
+    cell.classList.remove("visited", "path");
+  }
+}
+
+function resetStats() {
+  visitedStat.textContent = "0";
+  pathStat.textContent = "0";
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
+function isInsideGrid(row, col) {
+  return row >= 0 && row < ROWS && col >= 0 && col < COLS;
+}
+
+function canVisit(row, col) {
+  return gridState[row][col] !== "wall" && gridState[row][col] !== "bomb";
+}
+
+function makeKey(row, col) {
+  return `${row},${col}`;
+}
+
+function bfs() {
+  const queue = [startCell];
+  const visited = [];
+  const parent = {};
+  const visitOrder = [];
+
+  for (let row = 0; row < ROWS; row++) {
+    visited.push(Array(COLS).fill(false));
+  }
+
+  visited[startCell.row][startCell.col] = true;
+
+  const directions = [
+    { row: -1, col: 0 },
+    { row: 0, col: 1 },
+    { row: 1, col: 0 },
+    { row: 0, col: -1 },
+  ];
+
+  while (queue.length > 0) {
+    const current = queue.shift();
+    visitOrder.push(current);
+
+    if (isSameCell(current, targetCell)) {
+      break;
+    }
+
+    for (const direction of directions) {
+      const nextRow = current.row + direction.row;
+      const nextCol = current.col + direction.col;
+
+      if (!isInsideGrid(nextRow, nextCol)) {
+        continue;
+      }
+
+      if (visited[nextRow][nextCol] || !canVisit(nextRow, nextCol)) {
+        continue;
+      }
+
+      visited[nextRow][nextCol] = true;
+      parent[makeKey(nextRow, nextCol)] = current;
+      queue.push({ row: nextRow, col: nextCol });
+    }
+  }
+
+  const path = buildPath(parent);
+  return { visitOrder, path };
+}
+
+function buildPath(parent) {
+  const path = [];
+  let current = targetCell;
+
+  if (!parent[makeKey(current.row, current.col)] && !isSameCell(startCell, targetCell)) {
+    return path;
+  }
+
+  while (!isSameCell(current, startCell)) {
+    path.push(current);
+    current = parent[makeKey(current.row, current.col)];
+  }
+
+  path.push(startCell);
+  path.reverse();
+  return path;
+}
+
+async function animateCells(cells, className, delayMs) {
+  for (const cellPosition of cells) {
+    if (isSameCell(cellPosition, startCell) || isSameCell(cellPosition, targetCell)) {
+      continue;
+    }
+
+    const cell = getCellElement(cellPosition.row, cellPosition.col);
+    cell.classList.add(className);
+    await sleep(delayMs);
+  }
+}
+
+async function runSelectedAlgorithm() {
+  clearAlgorithmPaint();
+  resetStats();
+  updateAlgorithmLabel();
+  statusStat.textContent = "Running";
+  runButton.disabled = true;
+
+  const selectedAlgorithm = algorithmSelect.value;
+
+  if (selectedAlgorithm !== "bfs") {
+    statusStat.textContent = "This algorithm comes in a later checkpoint";
+    runButton.disabled = false;
+    return;
+  }
+
+  const result = bfs();
+  visitedStat.textContent = String(result.visitOrder.length);
+  pathStat.textContent = String(Math.max(0, result.path.length - 1));
+
+  await animateCells(result.visitOrder, "visited", 12);
+  await animateCells(result.path, "path", 24);
+
+  statusStat.textContent = result.path.length > 0 ? "Path found" : "No path found";
+  runButton.disabled = false;
+}
+
 function createGrid() {
   gridElement.innerHTML = "";
   buildInitialState();
@@ -104,6 +242,8 @@ gridElement.addEventListener("click", (event) => {
   if (selectedTool === "start") {
     startCell = { row, col };
     gridState[row][col] = "empty";
+    clearAlgorithmPaint();
+    resetStats();
     refreshGridPaint();
     statusStat.textContent = "Start moved";
     return;
@@ -112,6 +252,8 @@ gridElement.addEventListener("click", (event) => {
   if (selectedTool === "target") {
     targetCell = { row, col };
     gridState[row][col] = "empty";
+    clearAlgorithmPaint();
+    resetStats();
     refreshGridPaint();
     statusStat.textContent = "Target moved";
     return;
@@ -128,17 +270,17 @@ gridElement.addEventListener("click", (event) => {
     gridState[row][col] = selectedTool;
   }
 
+  clearAlgorithmPaint();
+  resetStats();
   paintCell(cell, row, col);
   statusStat.textContent = `Placed ${selectedTool}`;
 });
 
-runButton.addEventListener("click", () => {
-  updateAlgorithmLabel();
-  statusStat.textContent = "Algorithm logic comes in the next step";
-});
+runButton.addEventListener("click", runSelectedAlgorithm);
 
 resetButton.addEventListener("click", () => {
   createGrid();
+  resetStats();
   statusStat.textContent = "Ready";
 });
 

@@ -214,6 +214,14 @@ button:hover {
   background: var(--weight);
 }
 
+.cell.visited {
+  background: #93c5fd;
+}
+
+.cell.path {
+  background: #22c55e;
+}
+
 .stats-panel dl {
   display: grid;
   gap: 14px;
