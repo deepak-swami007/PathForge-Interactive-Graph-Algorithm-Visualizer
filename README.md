@@ -18,6 +18,31 @@ HTML + CSS + Vanilla JavaScript
 - Visual stats for visited nodes, path length, path cost, and runtime.
 - Free deployment through GitHub Pages.
 
+## Current File Structure
+
+```text
+index.html
+style.css
+scripts/
+  config.js
+  structures.js
+  grid-state.js
+  grid-algorithms.js
+  grid-ui.js
+  graph-lab.js
+  events.js
+```
+
+## Implementation Summary
+
+- `config.js`: DOM references, app state, labels, grid settings, and graph data.
+- `structures.js`: reusable DSA structures such as `MinHeap` and `DisjointSet`.
+- `grid-state.js`: grid creation, presets, cell painting, costs, and shared helpers.
+- `grid-algorithms.js`: BFS, DFS, Dijkstra, A*, Bellman-Ford, and Bidirectional BFS.
+- `grid-ui.js`: animation, run logic, stats, and grid comparison table.
+- `graph-lab.js`: graph rendering, Prim, Kruskal, Kosaraju, and graph comparison table.
+- `events.js`: button handlers and app initialization.
+
 ## Run Locally
 
 Open `index.html` directly in a browser.
