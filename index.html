@@ -138,6 +138,49 @@
         </div>
       </dl>
     </section>
+
+    <section class="panel graph-lab" aria-labelledby="graph-title">
+      <div class="workspace-header">
+        <div>
+          <h2 id="graph-title">Graph Lab</h2>
+          <p>Classic graph algorithms on a weighted node-edge graph.</p>
+        </div>
+        <div class="graph-controls">
+          <div class="control-group">
+            <label for="graphAlgorithm">Graph Algorithm</label>
+            <select id="graphAlgorithm">
+              <option value="prim">Prim's MST</option>
+            </select>
+          </div>
+          <button id="runGraphBtn" type="button">Run Graph</button>
+          <button id="resetGraphBtn" type="button">Reset Graph</button>
+        </div>
+      </div>
+      <div class="graph-layout">
+        <svg id="graphSvg" class="graph-svg" viewBox="0 0 640 340" role="img" aria-label="Weighted graph visualization"></svg>
+        <aside class="graph-result" aria-labelledby="graph-result-title">
+          <h3 id="graph-result-title">Graph Result</h3>
+          <dl>
+            <div>
+              <dt>Algorithm</dt>
+              <dd id="graphAlgorithmStat">Prim's MST</dd>
+            </div>
+            <div>
+              <dt>Status</dt>
+              <dd id="graphStatusStat">Ready</dd>
+            </div>
+            <div>
+              <dt>Total Weight</dt>
+              <dd id="graphWeightStat">0</dd>
+            </div>
+            <div>
+              <dt>Selected Edges</dt>
+              <dd id="graphEdgesStat">0</dd>
+            </div>
+          </dl>
+        </aside>
+      </div>
+    </section>
   </main>
 
   <script src="script.js"></script>

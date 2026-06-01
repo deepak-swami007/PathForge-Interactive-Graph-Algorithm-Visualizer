@@ -14,16 +14,26 @@ const costStat = document.getElementById("costStat");
 const runtimeStat = document.getElementById("runtimeStat");
 const algorithmInfo = document.getElementById("algorithmInfo");
 const comparisonBody = document.getElementById("comparisonBody");
+const graphAlgorithmSelect = document.getElementById("graphAlgorithm");
+const graphSvg = document.getElementById("graphSvg");
+const graphAlgorithmStat = document.getElementById("graphAlgorithmStat");
+const graphStatusStat = document.getElementById("graphStatusStat");
+const graphWeightStat = document.getElementById("graphWeightStat");
+const graphEdgesStat = document.getElementById("graphEdgesStat");
 const runButton = document.getElementById("runBtn");
 const runAllButton = document.getElementById("runAllBtn");
 const loadPresetButton = document.getElementById("loadPresetBtn");
 const clearPathButton = document.getElementById("clearPathBtn");
 const resetButton = document.getElementById("resetBtn");
+const runGraphButton = document.getElementById("runGraphBtn");
+const resetGraphButton = document.getElementById("resetGraphBtn");
 
 let startCell = { row: 3, col: 4 };
 let targetCell = { row: 10, col: 15 };
 let gridState = [];
 let comparisonStats = {};
+let selectedGraphEdges = new Set();
+let selectedGraphNodes = new Set();
 
 const algorithmInfoText = {
   bfs: "BFS explores level by level and finds the shortest path when every move has the same cost.",
@@ -50,6 +60,27 @@ const algorithmLabels = {
 };
 
 const gridAlgorithms = ["bfs", "dfs", "dijkstra", "astar", "bellmanFord", "bidirectionalBfs"];
+
+const graphNodes = [
+  { id: "A", x: 90, y: 85 },
+  { id: "B", x: 250, y: 55 },
+  { id: "C", x: 430, y: 90 },
+  { id: "D", x: 150, y: 245 },
+  { id: "E", x: 335, y: 250 },
+  { id: "F", x: 540, y: 225 },
+];
+
+const graphEdges = [
+  { from: "A", to: "B", weight: 4 },
+  { from: "A", to: "D", weight: 3 },
+  { from: "B", to: "C", weight: 5 },
+  { from: "B", to: "D", weight: 6 },
+  { from: "B", to: "E", weight: 7 },
+  { from: "C", to: "E", weight: 2 },
+  { from: "C", to: "F", weight: 8 },
+  { from: "D", to: "E", weight: 4 },
+  { from: "E", to: "F", weight: 1 },
+];
 
 class MinHeap {
   constructor(compare) {
@@ -302,6 +333,9 @@ function setControlsDisabled(isDisabled) {
   cellToolSelect.disabled = isDisabled;
   speedSelect.disabled = isDisabled;
   presetSelect.disabled = isDisabled;
+  graphAlgorithmSelect.disabled = isDisabled;
+  runGraphButton.disabled = isDisabled;
+  resetGraphButton.disabled = isDisabled;
 }
 
 function renderComparisonTable() {
@@ -921,6 +955,159 @@ function updateAlgorithmLabel() {
   algorithmInfo.textContent = algorithmInfoText[algorithmSelect.value];
 }
 
+function makeEdgeKey(from, to) {
+  return [from, to].sort().join("-");
+}
+
+function getGraphNode(id) {
+  return graphNodes.find((node) => node.id === id);
+}
+
+function createSvgElement(tagName) {
+  return document.createElementNS("http://www.w3.org/2000/svg", tagName);
+}
+
+function renderGraph() {
+  graphSvg.innerHTML = "";
+
+  for (const edge of graphEdges) {
+    const fromNode = getGraphNode(edge.from);
+    const toNode = getGraphNode(edge.to);
+    const edgeKey = makeEdgeKey(edge.from, edge.to);
+    const isSelected = selectedGraphEdges.has(edgeKey);
+    const line = createSvgElement("line");
+    line.setAttribute("x1", fromNode.x);
+    line.setAttribute("y1", fromNode.y);
+    line.setAttribute("x2", toNode.x);
+    line.setAttribute("y2", toNode.y);
+    line.setAttribute("class", isSelected ? "graph-edge selected" : "graph-edge");
+    graphSvg.appendChild(line);
+
+    const midX = (fromNode.x + toNode.x) / 2;
+    const midY = (fromNode.y + toNode.y) / 2;
+    const labelBg = createSvgElement("rect");
+    labelBg.setAttribute("x", midX - 13);
+    labelBg.setAttribute("y", midY - 12);
+    labelBg.setAttribute("width", 26);
+    labelBg.setAttribute("height", 24);
+    labelBg.setAttribute("rx", 6);
+    labelBg.setAttribute("class", "edge-label-bg");
+    graphSvg.appendChild(labelBg);
+
+    const label = createSvgElement("text");
+    label.setAttribute("x", midX);
+    label.setAttribute("y", midY + 1);
+    label.setAttribute("class", "edge-label");
+    label.textContent = edge.weight;
+    graphSvg.appendChild(label);
+  }
+
+  for (const node of graphNodes) {
+    const circle = createSvgElement("circle");
+    circle.setAttribute("cx", node.x);
+    circle.setAttribute("cy", node.y);
+    circle.setAttribute("r", 25);
+    circle.setAttribute("class", selectedGraphNodes.has(node.id) ? "graph-node active" : "graph-node");
+    graphSvg.appendChild(circle);
+
+    const label = createSvgElement("text");
+    label.setAttribute("x", node.x);
+    label.setAttribute("y", node.y + 1);
+    label.setAttribute("class", "graph-label");
+    label.textContent = node.id;
+    graphSvg.appendChild(label);
+  }
+}
+
+function buildGraphAdjacency() {
+  const adjacency = {};
+
+  for (const node of graphNodes) {
+    adjacency[node.id] = [];
+  }
+
+  for (const edge of graphEdges) {
+    adjacency[edge.from].push({ to: edge.to, weight: edge.weight, from: edge.from });
+    adjacency[edge.to].push({ to: edge.from, weight: edge.weight, from: edge.to });
+  }
+
+  return adjacency;
+}
+
+function primMst(startNodeId = "A") {
+  const adjacency = buildGraphAdjacency();
+  const visited = new Set([startNodeId]);
+  const minHeap = new MinHeap((first, second) => first.weight - second.weight);
+  const mstEdges = [];
+  let totalWeight = 0;
+
+  for (const edge of adjacency[startNodeId]) {
+    minHeap.push(edge);
+  }
+
+  while (minHeap.size() > 0 && visited.size < graphNodes.length) {
+    const edge = minHeap.pop();
+
+    if (visited.has(edge.to)) {
+      continue;
+    }
+
+    visited.add(edge.to);
+    mstEdges.push({ from: edge.from, to: edge.to, weight: edge.weight });
+    totalWeight += edge.weight;
+
+    for (const nextEdge of adjacency[edge.to]) {
+      if (!visited.has(nextEdge.to)) {
+        minHeap.push(nextEdge);
+      }
+    }
+  }
+
+  return { mstEdges, totalWeight, visited };
+}
+
+async function runGraphAlgorithm() {
+  graphStatusStat.textContent = "Running";
+  runGraphButton.disabled = true;
+  resetGraphButton.disabled = true;
+  graphAlgorithmSelect.disabled = true;
+
+  const selectedAlgorithm = graphAlgorithmSelect.value;
+
+  if (selectedAlgorithm === "prim") {
+    const result = primMst();
+    selectedGraphEdges = new Set();
+    selectedGraphNodes = new Set(["A"]);
+
+    for (const edge of result.mstEdges) {
+      selectedGraphEdges.add(makeEdgeKey(edge.from, edge.to));
+      selectedGraphNodes.add(edge.from);
+      selectedGraphNodes.add(edge.to);
+      renderGraph();
+      await sleep(getAnimationDelay() * 4);
+    }
+
+    graphAlgorithmStat.textContent = "Prim's MST";
+    graphStatusStat.textContent = "MST complete";
+    graphWeightStat.textContent = String(result.totalWeight);
+    graphEdgesStat.textContent = String(result.mstEdges.length);
+  }
+
+  runGraphButton.disabled = false;
+  resetGraphButton.disabled = false;
+  graphAlgorithmSelect.disabled = false;
+}
+
+function resetGraphLab() {
+  selectedGraphEdges = new Set();
+  selectedGraphNodes = new Set();
+  graphAlgorithmStat.textContent = "Prim's MST";
+  graphStatusStat.textContent = "Ready";
+  graphWeightStat.textContent = "0";
+  graphEdgesStat.textContent = "0";
+  renderGraph();
+}
+
 algorithmSelect.addEventListener("change", updateAlgorithmLabel);
 
 gridElement.addEventListener("click", (event) => {
@@ -975,6 +1162,10 @@ runButton.addEventListener("click", runSelectedAlgorithm);
 
 runAllButton.addEventListener("click", runAllAlgorithms);
 
+runGraphButton.addEventListener("click", runGraphAlgorithm);
+
+resetGraphButton.addEventListener("click", resetGraphLab);
+
 loadPresetButton.addEventListener("click", () => {
   applyPreset(presetSelect.value);
   clearComparisonTable();
@@ -996,3 +1187,4 @@ resetButton.addEventListener("click", () => {
 createGrid();
 updateAlgorithmLabel();
 renderComparisonTable();
+renderGraph();

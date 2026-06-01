@@ -122,7 +122,8 @@ button:hover {
 #resetBtn,
 #clearPathBtn,
 #loadPresetBtn,
-#runAllBtn {
+#runAllBtn,
+#resetGraphBtn {
   background: #ffffff;
   color: var(--text);
   border-color: var(--line);
@@ -274,6 +275,108 @@ tbody tr:last-child td {
   border-bottom: 0;
 }
 
+.graph-lab {
+  grid-column: 1 / -1;
+}
+
+.graph-controls {
+  display: flex;
+  align-items: end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.graph-controls .control-group {
+  margin-bottom: 0;
+  min-width: 180px;
+}
+
+.graph-layout {
+  display: grid;
+  grid-template-columns: minmax(360px, 1fr) 240px;
+  gap: 18px;
+}
+
+.graph-svg {
+  width: 100%;
+  min-height: 340px;
+  background: #f8fafc;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.graph-edge {
+  stroke: #94a3b8;
+  stroke-width: 4;
+  stroke-linecap: round;
+}
+
+.graph-edge.selected {
+  stroke: var(--start);
+  stroke-width: 6;
+}
+
+.graph-node {
+  fill: #ffffff;
+  stroke: var(--primary);
+  stroke-width: 4;
+}
+
+.graph-node.active {
+  fill: #dbeafe;
+  stroke: var(--start);
+}
+
+.graph-label,
+.edge-label {
+  fill: var(--text);
+  font-size: 15px;
+  font-weight: 700;
+  text-anchor: middle;
+  dominant-baseline: middle;
+  pointer-events: none;
+}
+
+.edge-label {
+  fill: var(--muted);
+  font-size: 13px;
+}
+
+.edge-label-bg {
+  fill: #f8fafc;
+  stroke: var(--line);
+}
+
+.graph-result {
+  background: #f8fafc;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 14px;
+}
+
+.graph-result h3 {
+  margin: 0 0 14px;
+  font-size: 15px;
+}
+
+.graph-result dl {
+  display: grid;
+  gap: 14px;
+  margin: 0;
+}
+
+.graph-result dt {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.graph-result dd {
+  margin: 4px 0 0;
+  font-weight: 700;
+}
+
 .stats-panel dl {
   display: grid;
   gap: 14px;
@@ -304,5 +407,9 @@ tbody tr:last-child td {
 
   .workspace-header {
     flex-direction: column;
+  }
+
+  .graph-layout {
+    grid-template-columns: 1fr;
   }
 }
