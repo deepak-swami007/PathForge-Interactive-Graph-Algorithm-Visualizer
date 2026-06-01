@@ -34,6 +34,89 @@ const speedDelay = {
   slow: 40,
 };
 
+class MinHeap {
+  constructor(compare) {
+    this.items = [];
+    this.compare = compare;
+  }
+
+  size() {
+    return this.items.length;
+  }
+
+  push(value) {
+    this.items.push(value);
+    this.heapifyUp(this.items.length - 1);
+  }
+
+  pop() {
+    if (this.items.length === 0) {
+      return null;
+    }
+
+    if (this.items.length === 1) {
+      return this.items.pop();
+    }
+
+    const top = this.items[0];
+    this.items[0] = this.items.pop();
+    this.heapifyDown(0);
+    return top;
+  }
+
+  heapifyUp(index) {
+    let currentIndex = index;
+
+    while (currentIndex > 0) {
+      const parentIndex = Math.floor((currentIndex - 1) / 2);
+
+      if (this.compare(this.items[currentIndex], this.items[parentIndex]) >= 0) {
+        break;
+      }
+
+      this.swap(currentIndex, parentIndex);
+      currentIndex = parentIndex;
+    }
+  }
+
+  heapifyDown(index) {
+    let currentIndex = index;
+
+    while (true) {
+      const leftIndex = currentIndex * 2 + 1;
+      const rightIndex = currentIndex * 2 + 2;
+      let smallestIndex = currentIndex;
+
+      if (
+        leftIndex < this.items.length
+        && this.compare(this.items[leftIndex], this.items[smallestIndex]) < 0
+      ) {
+        smallestIndex = leftIndex;
+      }
+
+      if (
+        rightIndex < this.items.length
+        && this.compare(this.items[rightIndex], this.items[smallestIndex]) < 0
+      ) {
+        smallestIndex = rightIndex;
+      }
+
+      if (smallestIndex === currentIndex) {
+        break;
+      }
+
+      this.swap(currentIndex, smallestIndex);
+      currentIndex = smallestIndex;
+    }
+  }
+
+  swap(firstIndex, secondIndex) {
+    const temp = this.items[firstIndex];
+    this.items[firstIndex] = this.items[secondIndex];
+    this.items[secondIndex] = temp;
+  }
+}
+
 function buildInitialState() {
   gridState = [];
 
@@ -320,7 +403,8 @@ function dijkstra() {
   const visited = [];
   const parent = {};
   const visitOrder = [];
-  const priorityQueue = [{ ...startCell, distance: 0 }];
+  const priorityQueue = new MinHeap((first, second) => first.distance - second.distance);
+  priorityQueue.push({ ...startCell, distance: 0 });
 
   for (let row = 0; row < ROWS; row++) {
     distances.push(Array(COLS).fill(Infinity));
@@ -336,9 +420,8 @@ function dijkstra() {
     { row: 0, col: -1 },
   ];
 
-  while (priorityQueue.length > 0) {
-    priorityQueue.sort((first, second) => first.distance - second.distance);
-    const current = priorityQueue.shift();
+  while (priorityQueue.size() > 0) {
+    const current = priorityQueue.pop();
 
     if (visited[current.row][current.col]) {
       continue;
@@ -383,11 +466,12 @@ function astar() {
   const visited = [];
   const parent = {};
   const visitOrder = [];
-  const openSet = [{
+  const openSet = new MinHeap((first, second) => first.f - second.f);
+  openSet.push({
     ...startCell,
     g: 0,
     f: manhattanDistance(startCell, targetCell),
-  }];
+  });
 
   for (let row = 0; row < ROWS; row++) {
     gCost.push(Array(COLS).fill(Infinity));
@@ -403,9 +487,8 @@ function astar() {
     { row: 0, col: -1 },
   ];
 
-  while (openSet.length > 0) {
-    openSet.sort((first, second) => first.f - second.f);
-    const current = openSet.shift();
+  while (openSet.size() > 0) {
+    const current = openSet.pop();
 
     if (visited[current.row][current.col]) {
       continue;
