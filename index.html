@@ -3,15 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GraphX Rescue</title>
+  <title>PathForge</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <header class="app-header">
     <div>
-      <p class="eyebrow">2D Graph Algorithm Visualizer</p>
-      <h1>GraphX Rescue</h1>
-      <p class="subtitle">A rescue-themed DSA visualizer for pathfinding and graph algorithms.</p>
+      <p class="eyebrow">Interactive Graph Algorithm Visualizer</p>
+      <h1>PathForge</h1>
+      <p class="subtitle">A 2D visual playground for pathfinding, graph traversal, weights, obstacles, and network algorithms.</p>
     </div>
   </header>
 
@@ -27,6 +27,17 @@
           <option value="astar">A*</option>
         </select>
       </div>
+      <div class="control-group">
+        <label for="cellTool">Cell Tool</label>
+        <select id="cellTool">
+          <option value="wall">Blocked</option>
+          <option value="bomb">Bomb</option>
+          <option value="weight">Weight</option>
+          <option value="start">Start</option>
+          <option value="target">Target</option>
+          <option value="erase">Erase</option>
+        </select>
+      </div>
       <div class="button-row">
         <button id="runBtn" type="button">Run</button>
         <button id="resetBtn" type="button">Reset</button>
@@ -36,7 +47,7 @@
     <section class="workspace" aria-labelledby="grid-title">
       <div class="workspace-header">
         <div>
-          <h2 id="grid-title">Rescue Grid</h2>
+          <h2 id="grid-title">Grid Lab</h2>
           <p>Start with a simple grid. Next step: walls, bombs, weights, and path animation.</p>
         </div>
         <div class="legend" aria-label="Grid legend">
@@ -44,6 +55,7 @@
           <span><i class="legend-box target"></i>Target</span>
           <span><i class="legend-box wall"></i>Blocked</span>
           <span><i class="legend-box bomb"></i>Bomb</span>
+          <span><i class="legend-box weight"></i>Weight</span>
         </div>
       </div>
       <div id="grid" class="grid" aria-label="Pathfinding grid"></div>
@@ -54,7 +66,7 @@
       <dl>
         <div>
           <dt>Mode</dt>
-          <dd id="modeStat">Grid Rescue</dd>
+          <dd id="modeStat">Grid Lab</dd>
         </div>
         <div>
           <dt>Algorithm</dt>
