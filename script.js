@@ -31,6 +31,7 @@ const algorithmInfoText = {
   dijkstra: "Dijkstra finds the lowest-cost path in a weighted grid. It is ideal when some cells are more expensive than others.",
   astar: "A* combines real path cost with Manhattan distance, so it usually reaches the target with fewer explored cells than Dijkstra.",
   bellmanFord: "Bellman-Ford relaxes all edges repeatedly. It is slower than Dijkstra here, but it is important because it can handle negative edges in graph problems.",
+  bidirectionalBfs: "Bidirectional BFS searches from the start and target at the same time, then joins the path when the two searches meet.",
 };
 
 const speedDelay = {
@@ -45,9 +46,10 @@ const algorithmLabels = {
   dijkstra: "Dijkstra",
   astar: "A*",
   bellmanFord: "Bellman-Ford",
+  bidirectionalBfs: "Bidirectional BFS",
 };
 
-const gridAlgorithms = ["bfs", "dfs", "dijkstra", "astar", "bellmanFord"];
+const gridAlgorithms = ["bfs", "dfs", "dijkstra", "astar", "bellmanFord", "bidirectionalBfs"];
 
 class MinHeap {
   constructor(compare) {
@@ -402,6 +404,124 @@ function bfs() {
   return { visitOrder, path };
 }
 
+function bidirectionalBfs() {
+  const startQueue = [startCell];
+  const targetQueue = [targetCell];
+  const visitedFromStart = [];
+  const visitedFromTarget = [];
+  const parentFromStart = {};
+  const parentFromTarget = {};
+  const visitOrder = [];
+  let meetingCell = null;
+
+  for (let row = 0; row < ROWS; row++) {
+    visitedFromStart.push(Array(COLS).fill(false));
+    visitedFromTarget.push(Array(COLS).fill(false));
+  }
+
+  visitedFromStart[startCell.row][startCell.col] = true;
+  visitedFromTarget[targetCell.row][targetCell.col] = true;
+
+  const directions = [
+    { row: -1, col: 0 },
+    { row: 0, col: 1 },
+    { row: 1, col: 0 },
+    { row: 0, col: -1 },
+  ];
+
+  while (startQueue.length > 0 && targetQueue.length > 0 && !meetingCell) {
+    meetingCell = expandBidirectionalLayer(
+      startQueue,
+      visitedFromStart,
+      visitedFromTarget,
+      parentFromStart,
+      directions,
+      visitOrder
+    );
+
+    if (meetingCell) {
+      break;
+    }
+
+    meetingCell = expandBidirectionalLayer(
+      targetQueue,
+      visitedFromTarget,
+      visitedFromStart,
+      parentFromTarget,
+      directions,
+      visitOrder
+    );
+  }
+
+  const path = meetingCell
+    ? buildBidirectionalPath(meetingCell, parentFromStart, parentFromTarget)
+    : [];
+
+  return { visitOrder, path };
+}
+
+function expandBidirectionalLayer(queue, ownVisited, otherVisited, ownParent, directions, visitOrder) {
+  const layerSize = queue.length;
+
+  for (let index = 0; index < layerSize; index++) {
+    const current = queue.shift();
+    visitOrder.push(current);
+
+    if (otherVisited[current.row][current.col]) {
+      return current;
+    }
+
+    for (const direction of directions) {
+      const nextRow = current.row + direction.row;
+      const nextCol = current.col + direction.col;
+
+      if (!isInsideGrid(nextRow, nextCol) || ownVisited[nextRow][nextCol] || !canVisit(nextRow, nextCol)) {
+        continue;
+      }
+
+      ownVisited[nextRow][nextCol] = true;
+      ownParent[makeKey(nextRow, nextCol)] = current;
+      const nextCell = { row: nextRow, col: nextCol };
+
+      if (otherVisited[nextRow][nextCol]) {
+        return nextCell;
+      }
+
+      queue.push(nextCell);
+    }
+  }
+
+  return null;
+}
+
+function buildBidirectionalPath(meetingCell, parentFromStart, parentFromTarget) {
+  const leftPath = [];
+  let current = meetingCell;
+
+  while (!isSameCell(current, startCell)) {
+    leftPath.push(current);
+    current = parentFromStart[makeKey(current.row, current.col)];
+  }
+
+  leftPath.push(startCell);
+  leftPath.reverse();
+
+  if (isSameCell(meetingCell, targetCell)) {
+    return leftPath;
+  }
+
+  const rightPath = [];
+  current = parentFromTarget[makeKey(meetingCell.row, meetingCell.col)];
+
+  while (current && !isSameCell(current, targetCell)) {
+    rightPath.push(current);
+    current = parentFromTarget[makeKey(current.row, current.col)];
+  }
+
+  rightPath.push(targetCell);
+  return [...leftPath, ...rightPath];
+}
+
 function dfs() {
   const stack = [startCell];
   const visited = [];
@@ -717,8 +837,10 @@ function runAlgorithmByName(selectedAlgorithm) {
     result = dijkstra();
   } else if (selectedAlgorithm === "astar") {
     result = astar();
-  } else {
+  } else if (selectedAlgorithm === "bellmanFord") {
     result = bellmanFord();
+  } else {
+    result = bidirectionalBfs();
   }
 
   const endTime = performance.now();

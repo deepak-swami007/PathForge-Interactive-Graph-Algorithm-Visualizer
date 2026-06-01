@@ -11,7 +11,7 @@ HTML + CSS + Vanilla JavaScript
 ## Planned Features
 
 - Grid lab with start, target, blocked cells, bombs, and weighted zones.
-- Pathfinding algorithms such as BFS, DFS, Dijkstra, A*, and Bellman-Ford.
+- Pathfinding algorithms such as BFS, DFS, Dijkstra, A*, Bellman-Ford, and Bidirectional BFS.
 - Demo presets for weighted detours, blocked mazes, and bomb traps.
 - Graph algorithms such as Bellman-Ford, Floyd-Warshall, Prim, Kruskal, Kosaraju, and Ford-Fulkerson.
 - Visual stats for visited nodes, path length, path cost, and runtime.
