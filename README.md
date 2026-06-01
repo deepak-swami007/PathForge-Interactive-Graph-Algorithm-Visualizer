@@ -14,7 +14,7 @@ HTML + CSS + Vanilla JavaScript
 - Pathfinding algorithms such as BFS, DFS, Dijkstra, and A*.
 - Demo presets for weighted detours, blocked mazes, and bomb traps.
 - Graph algorithms such as Bellman-Ford, Floyd-Warshall, Prim, Kruskal, Kosaraju, and Ford-Fulkerson.
-- Visual stats for visited nodes, path length, risk cost, and runtime.
+- Visual stats for visited nodes, path length, path cost, and runtime.
 - Free deployment through GitHub Pages.
 
 ## Run Locally

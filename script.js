@@ -11,6 +11,7 @@ const statusStat = document.getElementById("statusStat");
 const visitedStat = document.getElementById("visitedStat");
 const pathStat = document.getElementById("pathStat");
 const costStat = document.getElementById("costStat");
+const runtimeStat = document.getElementById("runtimeStat");
 const algorithmInfo = document.getElementById("algorithmInfo");
 const runButton = document.getElementById("runBtn");
 const loadPresetButton = document.getElementById("loadPresetBtn");
@@ -272,6 +273,7 @@ function resetStats() {
   visitedStat.textContent = "0";
   pathStat.textContent = "0";
   costStat.textContent = "0";
+  runtimeStat.textContent = "0 ms";
 }
 
 function getAnimationDelay() {
@@ -576,6 +578,8 @@ async function runSelectedAlgorithm() {
 
   let result;
 
+  const startTime = performance.now();
+
   if (selectedAlgorithm === "bfs") {
     result = bfs();
   } else if (selectedAlgorithm === "dfs") {
@@ -586,9 +590,13 @@ async function runSelectedAlgorithm() {
     result = astar();
   }
 
+  const endTime = performance.now();
+  const runtime = endTime - startTime;
+
   visitedStat.textContent = String(result.visitOrder.length);
   pathStat.textContent = String(Math.max(0, result.path.length - 1));
   costStat.textContent = String(result.cost || Math.max(0, result.path.length - 1));
+  runtimeStat.textContent = `${runtime.toFixed(2)} ms`;
 
   const delay = getAnimationDelay();
   await animateCells(result.visitOrder, "visited", delay);
