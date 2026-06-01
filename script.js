@@ -8,6 +8,7 @@ const algorithmStat = document.getElementById("algorithmStat");
 const statusStat = document.getElementById("statusStat");
 const visitedStat = document.getElementById("visitedStat");
 const pathStat = document.getElementById("pathStat");
+const costStat = document.getElementById("costStat");
 const runButton = document.getElementById("runBtn");
 const resetButton = document.getElementById("resetBtn");
 
@@ -77,6 +78,7 @@ function clearAlgorithmPaint() {
 function resetStats() {
   visitedStat.textContent = "0";
   pathStat.textContent = "0";
+  costStat.textContent = "0";
 }
 
 function sleep(ms) {
@@ -91,6 +93,10 @@ function isInsideGrid(row, col) {
 
 function canVisit(row, col) {
   return gridState[row][col] !== "wall" && gridState[row][col] !== "bomb";
+}
+
+function getCellCost(row, col) {
+  return gridState[row][col] === "weight" ? 5 : 1;
 }
 
 function makeKey(row, col) {
@@ -195,6 +201,65 @@ function dfs() {
   return { visitOrder, path };
 }
 
+function dijkstra() {
+  const distances = [];
+  const visited = [];
+  const parent = {};
+  const visitOrder = [];
+  const priorityQueue = [{ ...startCell, distance: 0 }];
+
+  for (let row = 0; row < ROWS; row++) {
+    distances.push(Array(COLS).fill(Infinity));
+    visited.push(Array(COLS).fill(false));
+  }
+
+  distances[startCell.row][startCell.col] = 0;
+
+  const directions = [
+    { row: -1, col: 0 },
+    { row: 0, col: 1 },
+    { row: 1, col: 0 },
+    { row: 0, col: -1 },
+  ];
+
+  while (priorityQueue.length > 0) {
+    priorityQueue.sort((first, second) => first.distance - second.distance);
+    const current = priorityQueue.shift();
+
+    if (visited[current.row][current.col]) {
+      continue;
+    }
+
+    visited[current.row][current.col] = true;
+    visitOrder.push({ row: current.row, col: current.col });
+
+    if (isSameCell(current, targetCell)) {
+      break;
+    }
+
+    for (const direction of directions) {
+      const nextRow = current.row + direction.row;
+      const nextCol = current.col + direction.col;
+
+      if (!isInsideGrid(nextRow, nextCol) || !canVisit(nextRow, nextCol)) {
+        continue;
+      }
+
+      const nextDistance = distances[current.row][current.col] + getCellCost(nextRow, nextCol);
+
+      if (nextDistance < distances[nextRow][nextCol]) {
+        distances[nextRow][nextCol] = nextDistance;
+        parent[makeKey(nextRow, nextCol)] = { row: current.row, col: current.col };
+        priorityQueue.push({ row: nextRow, col: nextCol, distance: nextDistance });
+      }
+    }
+  }
+
+  const path = buildPath(parent);
+  const cost = distances[targetCell.row][targetCell.col];
+  return { visitOrder, path, cost: Number.isFinite(cost) ? cost : 0 };
+}
+
 function buildPath(parent) {
   const path = [];
   let current = targetCell;
@@ -234,15 +299,25 @@ async function runSelectedAlgorithm() {
 
   const selectedAlgorithm = algorithmSelect.value;
 
-  if (selectedAlgorithm !== "bfs" && selectedAlgorithm !== "dfs") {
+  if (!["bfs", "dfs", "dijkstra"].includes(selectedAlgorithm)) {
     statusStat.textContent = "This algorithm comes in a later checkpoint";
     runButton.disabled = false;
     return;
   }
 
-  const result = selectedAlgorithm === "bfs" ? bfs() : dfs();
+  let result;
+
+  if (selectedAlgorithm === "bfs") {
+    result = bfs();
+  } else if (selectedAlgorithm === "dfs") {
+    result = dfs();
+  } else {
+    result = dijkstra();
+  }
+
   visitedStat.textContent = String(result.visitOrder.length);
   pathStat.textContent = String(Math.max(0, result.path.length - 1));
+  costStat.textContent = String(result.cost || Math.max(0, result.path.length - 1));
 
   await animateCells(result.visitOrder, "visited", 12);
   await animateCells(result.path, "path", 24);
