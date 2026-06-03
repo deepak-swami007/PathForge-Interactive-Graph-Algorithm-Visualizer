@@ -8,18 +8,28 @@
 </head>
 <body>
   <header class="app-header">
-    <div>
-      <p class="eyebrow">Interactive Graph Algorithm Visualizer</p>
-      <h1>PathForge</h1>
-      <p class="subtitle">A 2D visual playground for pathfinding, graph traversal, weights, obstacles, and network algorithms.</p>
+    <div class="header-container">
+      <div class="header-brand">
+        <p class="eyebrow">Interactive Graph Algorithm Visualizer</p>
+        <h1>PathForge</h1>
+        <p class="subtitle">A 2D visual playground for pathfinding, graph traversal, weights, obstacles, and network algorithms.</p>
+      </div>
+      <nav class="tab-navigation" aria-label="Visualizer Modes">
+        <button class="tab-btn active" data-tab="grid" type="button">
+          <span class="tab-icon">🧭</span> Grid Lab
+        </button>
+        <button class="tab-btn" data-tab="graph" type="button">
+          <span class="tab-icon">🕸️</span> Graph Lab
+        </button>
+      </nav>
     </div>
   </header>
 
-  <main class="app-shell">
+  <main class="app-shell tab-grid">
     <section class="panel controls-panel" aria-labelledby="controls-title">
-      <h2 id="controls-title">Controls</h2>
+      <h2 id="controls-title">Grid Controls</h2>
       <div class="control-group">
-        <label for="algorithm">Algorithm</label>
+        <label for="algorithm">Grid Algorithm</label>
         <select id="algorithm">
           <option value="bfs">BFS</option>
           <option value="dfs">DFS</option>
@@ -70,7 +80,7 @@
       <div class="workspace-header">
         <div>
           <h2 id="grid-title">Grid Lab</h2>
-          <p>Start with a simple grid. Next step: walls, bombs, weights, and path animation.</p>
+          <p>Build obstacle, bomb, and weighted-cell scenarios, then compare pathfinding behavior.</p>
         </div>
         <div class="legend" aria-label="Grid legend">
           <span><i class="legend-box start"></i>Start</span>
@@ -106,7 +116,7 @@
     </section>
 
     <section class="panel stats-panel" aria-labelledby="stats-title">
-      <h2 id="stats-title">Stats</h2>
+      <h2 id="stats-title">Grid Stats</h2>
       <dl>
         <div>
           <dt>Mode</dt>
@@ -147,6 +157,23 @@
         </div>
         <div class="graph-controls">
           <div class="control-group">
+            <label for="graphMode">Graph Source</label>
+            <select id="graphMode">
+              <option value="preset">Preset Graph</option>
+              <option value="custom">Custom Graph</option>
+            </select>
+          </div>
+          <div class="control-group">
+            <label for="graphEditTool">Edit Tool</label>
+            <select id="graphEditTool" disabled>
+              <option value="select">Select</option>
+              <option value="addNode">Add Node</option>
+              <option value="addEdge">Add Edge</option>
+              <option value="delete">Delete</option>
+              <option value="move">Move Node</option>
+            </select>
+          </div>
+          <div class="control-group">
             <label for="graphAlgorithm">Graph Algorithm</label>
             <select id="graphAlgorithm">
               <option value="prim">Prim's MST</option>
@@ -154,15 +181,22 @@
               <option value="kosaraju">Kosaraju SCC</option>
               <option value="floydWarshall">Floyd-Warshall</option>
               <option value="edmondsKarp">Edmonds-Karp Max Flow</option>
+              <option value="topologicalSort">Topological Sort</option>
+              <option value="tarjanBridges">Tarjan Bridges</option>
             </select>
           </div>
           <button id="runGraphBtn" type="button">Run Graph</button>
           <button id="runGraphAllBtn" type="button">Run Graph All</button>
           <button id="resetGraphBtn" type="button">Reset Graph</button>
+          <button id="clearGraphBtn" type="button">Clear Graph</button>
         </div>
       </div>
       <div class="graph-layout">
         <svg id="graphSvg" class="graph-svg" viewBox="0 0 640 340" role="img" aria-label="Graph visualization"></svg>
+          <div id="graphEditorHint" class="graph-editor-hint">
+            <span class="hint-icon">💡</span>
+            <span id="graphEditorHintText">Switch to "Custom Graph" mode to build your own graph.</span>
+          </div>
         <aside class="graph-result" aria-labelledby="graph-result-title">
           <h3 id="graph-result-title">Graph Result</h3>
           <dl>
@@ -207,8 +241,8 @@
         </div>
       </section>
       <section class="comparison-box graph-matrix-box" aria-labelledby="graph-matrix-title">
-        <h3 id="graph-matrix-title">All-Pairs Distance Matrix</h3>
-        <div id="graphMatrixOutput" class="matrix-output">Run Floyd-Warshall to generate the matrix.</div>
+        <h3 id="graph-matrix-title">Graph Output</h3>
+        <div id="graphMatrixOutput" class="matrix-output">Run Floyd-Warshall, Topological Sort, or Tarjan Bridges to generate details.</div>
       </section>
     </section>
   </main>

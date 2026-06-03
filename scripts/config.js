@@ -31,6 +31,11 @@ const resetButton = document.getElementById("resetBtn");
 const runGraphButton = document.getElementById("runGraphBtn");
 const runGraphAllButton = document.getElementById("runGraphAllBtn");
 const resetGraphButton = document.getElementById("resetGraphBtn");
+const graphEditToolSelect = document.getElementById("graphEditTool");
+const graphModeSelect = document.getElementById("graphMode");
+const clearGraphButton = document.getElementById("clearGraphBtn");
+const graphEditorHint = document.getElementById("graphEditorHint");
+const graphEditorHintText = document.getElementById("graphEditorHintText");
 
 let startCell = { row: 3, col: 4 };
 let targetCell = { row: 10, col: 15 };
@@ -40,6 +45,13 @@ let selectedGraphEdges = new Set();
 let selectedGraphNodes = new Set();
 let sccGroupByNode = {};
 let graphComparisonStats = {};
+let graphEditMode = "select";
+let pendingEdgeFrom = null;
+let nextNodeId = 71;
+let isCustomGraph = false;
+let draggingNode = null;
+let dragOffsetX = 0;
+let dragOffsetY = 0;
 
 const algorithmInfoText = {
   bfs: "BFS explores level by level and finds the shortest path when every move has the same cost.",
@@ -67,7 +79,7 @@ const algorithmLabels = {
 
 const gridAlgorithms = ["bfs", "dfs", "dijkstra", "astar", "bellmanFord", "bidirectionalBfs"];
 
-const graphNodes = [
+const presetGraphNodes = [
   { id: "A", x: 90, y: 85 },
   { id: "B", x: 250, y: 55 },
   { id: "C", x: 430, y: 90 },
@@ -76,7 +88,7 @@ const graphNodes = [
   { id: "F", x: 540, y: 225 },
 ];
 
-const graphEdges = [
+const presetGraphEdges = [
   { from: "A", to: "B", weight: 4 },
   { from: "A", to: "D", weight: 3 },
   { from: "B", to: "C", weight: 5 },
@@ -87,6 +99,9 @@ const graphEdges = [
   { from: "D", to: "E", weight: 4 },
   { from: "E", to: "F", weight: 1 },
 ];
+
+let graphNodes = [...presetGraphNodes.map(n => ({...n}))];
+let graphEdges = [...presetGraphEdges.map(e => ({...e}))];
 
 const directedGraphEdges = [
   { from: "A", to: "B" },
@@ -111,10 +126,32 @@ const flowGraphEdges = [
   { from: "E", to: "F", capacity: 6 },
 ];
 
+const dagEdges = [
+  { from: "A", to: "B" },
+  { from: "A", to: "D" },
+  { from: "B", to: "C" },
+  { from: "B", to: "E" },
+  { from: "D", to: "E" },
+  { from: "C", to: "F" },
+  { from: "E", to: "F" },
+];
+
+const bridgeGraphEdges = [
+  { from: "A", to: "B" },
+  { from: "B", to: "C" },
+  { from: "C", to: "A" },
+  { from: "C", to: "D" },
+  { from: "D", to: "E" },
+  { from: "E", to: "F" },
+  { from: "F", to: "D" },
+];
+
 const graphAlgorithmLabels = {
   prim: "Prim's MST",
   kruskal: "Kruskal's MST",
   kosaraju: "Kosaraju SCC",
   floydWarshall: "Floyd-Warshall",
   edmondsKarp: "Edmonds-Karp Max Flow",
+  topologicalSort: "Topological Sort",
+  tarjanBridges: "Tarjan Bridges",
 };

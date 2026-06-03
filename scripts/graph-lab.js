@@ -15,8 +15,14 @@ function renderGraph() {
   const selectedAlgorithm = graphAlgorithmSelect.value;
   const isSccMode = selectedAlgorithm === "kosaraju" || Object.keys(sccGroupByNode).length > 0;
   const isFlowMode = selectedAlgorithm === "edmondsKarp";
-  const isDirectedMode = isSccMode || isFlowMode;
-  const edgesToRender = isSccMode ? directedGraphEdges : (isFlowMode ? flowGraphEdges : graphEdges);
+  const isTopoMode = selectedAlgorithm === "topologicalSort";
+  const isBridgeMode = selectedAlgorithm === "tarjanBridges";
+  const isDirectedMode = !isCustomGraph && (isSccMode || isFlowMode || isTopoMode);
+  const edgesToRender = isCustomGraph
+    ? graphEdges
+    : (isSccMode
+      ? directedGraphEdges
+      : (isFlowMode ? flowGraphEdges : (isTopoMode ? dagEdges : (isBridgeMode ? bridgeGraphEdges : graphEdges))));
 
   if (isDirectedMode) {
     const defs = createSvgElement("defs");
@@ -64,7 +70,7 @@ function renderGraph() {
 
     graphSvg.appendChild(line);
 
-    if (isSccMode) {
+    if (isSccMode || isTopoMode || isBridgeMode) {
       continue;
     }
 
@@ -90,10 +96,13 @@ function renderGraph() {
   for (const node of graphNodes) {
     const circle = createSvgElement("circle");
     const sccClass = Number.isInteger(sccGroupByNode[node.id]) ? ` scc-${sccGroupByNode[node.id] % 4}` : "";
+    const isPending = pendingEdgeFrom === node.id;
+    const editableClass = isCustomGraph ? " editable" : "";
     circle.setAttribute("cx", node.x);
     circle.setAttribute("cy", node.y);
     circle.setAttribute("r", 25);
-    circle.setAttribute("class", selectedGraphNodes.has(node.id) ? `graph-node active${sccClass}` : `graph-node${sccClass}`);
+    const baseClass = selectedGraphNodes.has(node.id) ? `graph-node active${sccClass}` : `graph-node${sccClass}`;
+    circle.setAttribute("class", baseClass + editableClass + (isPending ? " pending-edge" : ""));
     graphSvg.appendChild(circle);
 
     const label = createSvgElement("text");
@@ -125,7 +134,7 @@ function renderGraphComparisonTable() {
 }
 
 function clearGraphMatrixOutput() {
-  graphMatrixOutput.textContent = "Run Floyd-Warshall to generate the matrix.";
+  graphMatrixOutput.textContent = "Run Floyd-Warshall, Topological Sort, or Tarjan Bridges to generate details.";
 }
 
 function renderDistanceMatrix(nodeIds, distances) {
@@ -245,8 +254,9 @@ function reverseDirectedEdges(edges) {
 }
 
 function kosarajuScc() {
-  const adjacency = buildDirectedAdjacency(directedGraphEdges);
-  const reversedAdjacency = buildDirectedAdjacency(reverseDirectedEdges(directedGraphEdges));
+  const edges = isCustomGraph ? graphEdges.map(e => ({ from: e.from, to: e.to })) : directedGraphEdges;
+  const adjacency = buildDirectedAdjacency(edges);
+  const reversedAdjacency = buildDirectedAdjacency(reverseDirectedEdges(edges));
   const visited = new Set();
   const order = [];
   const components = [];
@@ -342,7 +352,9 @@ function edmondsKarp(source = "A", sink = "F") {
     }
   }
 
-  for (const edge of flowGraphEdges) {
+  const flowEdges = isCustomGraph ? graphEdges.map(e => ({ from: e.from, to: e.to, capacity: e.weight || 1 })) : flowGraphEdges;
+
+  for (const edge of flowEdges) {
     residual[edge.from][edge.to] += edge.capacity;
   }
 
@@ -400,6 +412,109 @@ function edmondsKarp(source = "A", sink = "F") {
   return { maxFlow, augmentingPaths, usedEdges };
 }
 
+function topologicalSort() {
+  const nodeIds = graphNodes.map((node) => node.id);
+  const topoEdges = isCustomGraph ? graphEdges.map(e => ({ from: e.from, to: e.to })) : dagEdges;
+  const adjacency = buildDirectedAdjacency(topoEdges);
+  const indegree = {};
+  const queue = [];
+  const order = [];
+
+  for (const nodeId of nodeIds) {
+    indegree[nodeId] = 0;
+  }
+
+  for (const edge of topoEdges) {
+    indegree[edge.to]++;
+  }
+
+  for (const nodeId of nodeIds) {
+    if (indegree[nodeId] === 0) {
+      queue.push(nodeId);
+    }
+  }
+
+  while (queue.length > 0) {
+    const current = queue.shift();
+    order.push(current);
+
+    for (const nextNode of adjacency[current]) {
+      indegree[nextNode]--;
+
+      if (indegree[nextNode] === 0) {
+        queue.push(nextNode);
+      }
+    }
+  }
+
+  return {
+    order,
+    hasCycle: order.length !== nodeIds.length,
+  };
+}
+
+function buildUndirectedAdjacency(edges) {
+  const adjacency = {};
+
+  for (const node of graphNodes) {
+    adjacency[node.id] = [];
+  }
+
+  for (const edge of edges) {
+    adjacency[edge.from].push(edge.to);
+    adjacency[edge.to].push(edge.from);
+  }
+
+  return adjacency;
+}
+
+function tarjanBridges() {
+  const bridgeEdges = isCustomGraph ? graphEdges.map(e => ({ from: e.from, to: e.to })) : bridgeGraphEdges;
+  const adjacency = buildUndirectedAdjacency(bridgeEdges);
+  const visited = new Set();
+  const discovery = {};
+  const low = {};
+  const bridges = [];
+  let timer = 0;
+
+  function dfs(nodeId, parentId) {
+    visited.add(nodeId);
+    discovery[nodeId] = timer;
+    low[nodeId] = timer;
+    timer++;
+
+    for (const nextNode of adjacency[nodeId]) {
+      if (nextNode === parentId) {
+        continue;
+      }
+
+      if (!visited.has(nextNode)) {
+        dfs(nextNode, nodeId);
+        low[nodeId] = Math.min(low[nodeId], low[nextNode]);
+
+        if (low[nextNode] > discovery[nodeId]) {
+          bridges.push({ from: nodeId, to: nextNode });
+        }
+      } else {
+        low[nodeId] = Math.min(low[nodeId], discovery[nextNode]);
+      }
+    }
+  }
+
+  for (const node of graphNodes) {
+    if (!visited.has(node.id)) {
+      dfs(node.id, null);
+    }
+  }
+
+  return { bridges, visitedCount: visited.size };
+}
+
+function renderTopologicalOrder(order) {
+  const orderText = order.map((nodeId, index) => `${index + 1}. ${nodeId}`).join(" → ");
+  graphMatrixOutput.innerHTML = `<strong>Topological Order:</strong> ${orderText}`;
+}
+
 async function runGraphAlgorithm() {
   graphStatusStat.textContent = "Running";
   runGraphButton.disabled = true;
@@ -442,7 +557,8 @@ async function executeGraphAlgorithm(selectedAlgorithm) {
   graphStatusStat.textContent = `Running ${graphAlgorithmLabel}`;
 
   if (selectedAlgorithm === "prim") {
-    result = primMst();
+    const startId = graphNodes.length > 0 ? graphNodes[0].id : "A";
+    result = primMst(startId);
   } else if (selectedAlgorithm === "kruskal") {
     result = kruskalMst();
   } else if (selectedAlgorithm === "kosaraju") {
@@ -450,7 +566,13 @@ async function executeGraphAlgorithm(selectedAlgorithm) {
   } else if (selectedAlgorithm === "floydWarshall") {
     result = floydWarshall();
   } else if (selectedAlgorithm === "edmondsKarp") {
-    result = edmondsKarp();
+    const srcId = graphNodes.length > 0 ? graphNodes[0].id : "A";
+    const sinkId = graphNodes.length > 1 ? graphNodes[graphNodes.length - 1].id : "F";
+    result = edmondsKarp(srcId, sinkId);
+  } else if (selectedAlgorithm === "topologicalSort") {
+    result = topologicalSort();
+  } else if (selectedAlgorithm === "tarjanBridges") {
+    result = tarjanBridges();
   }
 
   const runtime = performance.now() - startTime;
@@ -512,7 +634,9 @@ async function executeGraphAlgorithm(selectedAlgorithm) {
 
   if (selectedAlgorithm === "edmondsKarp") {
     selectedGraphEdges = new Set();
-    selectedGraphNodes = new Set(["A", "F"]);
+    const srcId = graphNodes.length > 0 ? graphNodes[0].id : "A";
+    const sinkId = graphNodes.length > 1 ? graphNodes[graphNodes.length - 1].id : "F";
+    selectedGraphNodes = new Set([srcId, sinkId]);
     sccGroupByNode = {};
     clearGraphMatrixOutput();
     renderGraph();
@@ -545,8 +669,71 @@ async function executeGraphAlgorithm(selectedAlgorithm) {
     return;
   }
 
+  if (selectedAlgorithm === "topologicalSort") {
+    selectedGraphEdges = new Set();
+    selectedGraphNodes = new Set();
+    sccGroupByNode = {};
+    clearGraphMatrixOutput();
+    renderGraph();
+
+    for (const nodeId of result.order) {
+      selectedGraphNodes.add(nodeId);
+      renderGraph();
+      await sleep(getAnimationDelay() * 6);
+    }
+
+    renderTopologicalOrder(result.order);
+    graphAlgorithmStat.textContent = graphAlgorithmLabel;
+    graphStatusStat.textContent = result.hasCycle ? "Cycle detected" : "Order complete";
+    graphWeightStat.textContent = `${result.order.length} nodes`;
+    graphEdgesStat.textContent = `${isCustomGraph ? graphEdges.length : dagEdges.length} edges`;
+    graphRuntimeStat.textContent = runtimeText;
+    graphComparisonStats[selectedAlgorithm] = {
+      status: result.hasCycle ? "Cycle detected" : "Order complete",
+      result: `${result.order.length} nodes`,
+      items: `${isCustomGraph ? graphEdges.length : dagEdges.length} edges`,
+      runtime: runtimeText,
+    };
+    renderGraphComparisonTable();
+    return;
+  }
+
+  if (selectedAlgorithm === "tarjanBridges") {
+    selectedGraphEdges = new Set();
+    selectedGraphNodes = new Set();
+    sccGroupByNode = {};
+    clearGraphMatrixOutput();
+    renderGraph();
+
+    for (const bridge of result.bridges) {
+      selectedGraphEdges.add(makeEdgeKey(bridge.from, bridge.to));
+      selectedGraphNodes.add(bridge.from);
+      selectedGraphNodes.add(bridge.to);
+      renderGraph();
+      await sleep(getAnimationDelay() * 6);
+    }
+
+    graphMatrixOutput.innerHTML = result.bridges.length > 0
+      ? `<strong>Bridge Edges:</strong> ${result.bridges.map((edge) => `${edge.from}-${edge.to}`).join(", ")}`
+      : "<strong>Bridge Edges:</strong> None";
+    graphAlgorithmStat.textContent = graphAlgorithmLabel;
+    graphStatusStat.textContent = "Bridges complete";
+    graphWeightStat.textContent = `${result.bridges.length} bridges`;
+    graphEdgesStat.textContent = `${isCustomGraph ? graphEdges.length : bridgeGraphEdges.length} edges`;
+    graphRuntimeStat.textContent = runtimeText;
+    graphComparisonStats[selectedAlgorithm] = {
+      status: "Bridges complete",
+      result: `${result.bridges.length} bridges`,
+      items: `${isCustomGraph ? graphEdges.length : bridgeGraphEdges.length} edges`,
+      runtime: runtimeText,
+    };
+    renderGraphComparisonTable();
+    return;
+  }
+
   selectedGraphEdges = new Set();
-  selectedGraphNodes = new Set(selectedAlgorithm === "prim" ? ["A"] : []);
+  const startNodeId = graphNodes.length > 0 ? graphNodes[0].id : "A";
+  selectedGraphNodes = new Set(selectedAlgorithm === "prim" ? [startNodeId] : []);
   sccGroupByNode = {};
   renderGraph();
 
@@ -581,6 +768,280 @@ function resetGraphLab() {
   graphWeightStat.textContent = "0";
   graphEdgesStat.textContent = "0";
   graphRuntimeStat.textContent = "0 ms";
+  pendingEdgeFrom = null;
   renderGraph();
   clearGraphMatrixOutput();
+}
+
+/* ==================== Custom Graph Editor ==================== */
+
+function getNextNodeLabel() {
+  const existing = new Set(graphNodes.map(n => n.id));
+  const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+  for (let i = 0; i < alphabet.length; i++) {
+    if (!existing.has(alphabet[i])) {
+      return alphabet[i];
+    }
+  }
+
+  for (let suffix = 1; suffix <= 99; suffix++) {
+    for (let i = 0; i < alphabet.length; i++) {
+      const label = alphabet[i] + suffix;
+      if (!existing.has(label)) {
+        return label;
+      }
+    }
+  }
+
+  return "N" + nextNodeId++;
+}
+
+function getSvgCoords(event) {
+  const rect = graphSvg.getBoundingClientRect();
+  const svgWidth = 640;
+  const svgHeight = 340;
+  const scaleX = svgWidth / rect.width;
+  const scaleY = svgHeight / rect.height;
+  return {
+    x: (event.clientX - rect.left) * scaleX,
+    y: (event.clientY - rect.top) * scaleY,
+  };
+}
+
+function findNodeAt(svgX, svgY) {
+  const hitRadius = 30;
+  for (const node of graphNodes) {
+    const dx = node.x - svgX;
+    const dy = node.y - svgY;
+    if (Math.hypot(dx, dy) <= hitRadius) {
+      return node;
+    }
+  }
+  return null;
+}
+
+function findEdgeAt(svgX, svgY) {
+  const hitDistance = 12;
+  for (const edge of graphEdges) {
+    const fromNode = getGraphNode(edge.from);
+    const toNode = getGraphNode(edge.to);
+    if (!fromNode || !toNode) continue;
+
+    const dx = toNode.x - fromNode.x;
+    const dy = toNode.y - fromNode.y;
+    const lenSq = dx * dx + dy * dy;
+    if (lenSq === 0) continue;
+
+    const t = Math.max(0, Math.min(1, ((svgX - fromNode.x) * dx + (svgY - fromNode.y) * dy) / lenSq));
+    const projX = fromNode.x + t * dx;
+    const projY = fromNode.y + t * dy;
+    const dist = Math.hypot(svgX - projX, svgY - projY);
+
+    if (dist <= hitDistance) {
+      return edge;
+    }
+  }
+  return null;
+}
+
+function addGraphNode(x, y) {
+  const label = getNextNodeLabel();
+  const padding = 30;
+  const clampedX = Math.max(padding, Math.min(640 - padding, x));
+  const clampedY = Math.max(padding, Math.min(340 - padding, y));
+
+  graphNodes.push({ id: label, x: clampedX, y: clampedY });
+  resetGraphLab();
+  updateEditorHint(`Node "${label}" added. Add more nodes or switch to "Add Edge" to connect them.`);
+}
+
+function addGraphEdge(fromId, toId) {
+  const existing = graphEdges.find(e =>
+    (e.from === fromId && e.to === toId) ||
+    (e.from === toId && e.to === fromId)
+  );
+
+  if (existing) {
+    updateEditorHint(`Edge ${fromId}–${toId} already exists.`);
+    pendingEdgeFrom = null;
+    renderGraph();
+    return;
+  }
+
+  const weightStr = prompt(`Enter weight for edge ${fromId} → ${toId}:`, "1");
+  if (weightStr === null) {
+    pendingEdgeFrom = null;
+    renderGraph();
+    updateEditorHint("Edge creation cancelled.");
+    return;
+  }
+
+  const weight = parseInt(weightStr, 10);
+  if (isNaN(weight) || weight < 0) {
+    pendingEdgeFrom = null;
+    renderGraph();
+    updateEditorHint("Invalid weight. Edge not created.");
+    return;
+  }
+
+  graphEdges.push({ from: fromId, to: toId, weight });
+  pendingEdgeFrom = null;
+  resetGraphLab();
+  updateEditorHint(`Edge ${fromId}–${toId} (weight ${weight}) created.`);
+}
+
+function deleteGraphNode(nodeId) {
+  graphNodes = graphNodes.filter(n => n.id !== nodeId);
+  graphEdges = graphEdges.filter(e => e.from !== nodeId && e.to !== nodeId);
+  pendingEdgeFrom = null;
+  resetGraphLab();
+  updateEditorHint(`Node "${nodeId}" and its edges deleted.`);
+}
+
+function deleteGraphEdge(edge) {
+  graphEdges = graphEdges.filter(e => !(e.from === edge.from && e.to === edge.to));
+  resetGraphLab();
+  updateEditorHint(`Edge ${edge.from}–${edge.to} deleted.`);
+}
+
+function updateEditorHint(text) {
+  graphEditorHintText.textContent = text;
+  graphEditorHint.classList.add("visible");
+}
+
+function hideEditorHint() {
+  graphEditorHint.classList.remove("visible");
+}
+
+function switchToPresetGraph() {
+  graphNodes = [...presetGraphNodes.map(n => ({...n}))];
+  graphEdges = [...presetGraphEdges.map(e => ({...e}))];
+  isCustomGraph = false;
+  graphEditToolSelect.disabled = true;
+  graphEditToolSelect.value = "select";
+  graphSvg.classList.remove("edit-mode", "tool-addNode", "tool-addEdge", "tool-delete", "tool-move", "tool-select");
+  pendingEdgeFrom = null;
+  draggingNode = null;
+  hideEditorHint();
+  resetGraphLab();
+}
+
+function switchToCustomGraph() {
+  if (!isCustomGraph) {
+    graphNodes = [];
+    graphEdges = [];
+    isCustomGraph = true;
+  }
+  graphEditToolSelect.disabled = false;
+  graphEditToolSelect.value = "addNode";
+  graphSvg.classList.add("edit-mode", "tool-addNode");
+  pendingEdgeFrom = null;
+  draggingNode = null;
+  resetGraphLab();
+  updateEditorHint("Click on the canvas to place nodes. Use the Edit Tool dropdown to switch between adding nodes, edges, moving, or deleting.");
+}
+
+function clearCustomGraph() {
+  graphNodes = [];
+  graphEdges = [];
+  pendingEdgeFrom = null;
+  draggingNode = null;
+  resetGraphLab();
+  updateEditorHint("Graph cleared. Click on the canvas to start adding nodes.");
+}
+
+function updateSvgCursorClass() {
+  graphSvg.classList.remove("tool-addNode", "tool-addEdge", "tool-delete", "tool-move", "tool-select");
+  graphSvg.classList.add("tool-" + graphEditToolSelect.value);
+}
+
+function handleGraphSvgClick(event) {
+  if (!isCustomGraph) return;
+
+  const coords = getSvgCoords(event);
+  const tool = graphEditToolSelect.value;
+
+  if (tool === "addNode") {
+    const existingNode = findNodeAt(coords.x, coords.y);
+    if (existingNode) {
+      updateEditorHint(`A node already exists there ("${existingNode.id}"). Click somewhere else.`);
+      return;
+    }
+    addGraphNode(coords.x, coords.y);
+    return;
+  }
+
+  if (tool === "addEdge") {
+    const clickedNode = findNodeAt(coords.x, coords.y);
+    if (!clickedNode) {
+      updateEditorHint("Click on a node to start an edge.");
+      return;
+    }
+
+    if (pendingEdgeFrom === null) {
+      pendingEdgeFrom = clickedNode.id;
+      renderGraph();
+      updateEditorHint(`Node "${clickedNode.id}" selected as source. Now click a second node to complete the edge.`);
+      return;
+    }
+
+    if (pendingEdgeFrom === clickedNode.id) {
+      pendingEdgeFrom = null;
+      renderGraph();
+      updateEditorHint("Self-loops not allowed. Edge cancelled.");
+      return;
+    }
+
+    addGraphEdge(pendingEdgeFrom, clickedNode.id);
+    return;
+  }
+
+  if (tool === "delete") {
+    const clickedNode = findNodeAt(coords.x, coords.y);
+    if (clickedNode) {
+      deleteGraphNode(clickedNode.id);
+      return;
+    }
+
+    const clickedEdge = findEdgeAt(coords.x, coords.y);
+    if (clickedEdge) {
+      deleteGraphEdge(clickedEdge);
+      return;
+    }
+
+    updateEditorHint("Click directly on a node or edge to delete it.");
+    return;
+  }
+}
+
+function handleGraphSvgMouseDown(event) {
+  if (!isCustomGraph || graphEditToolSelect.value !== "move") return;
+
+  const coords = getSvgCoords(event);
+  const node = findNodeAt(coords.x, coords.y);
+
+  if (node) {
+    draggingNode = node;
+    dragOffsetX = coords.x - node.x;
+    dragOffsetY = coords.y - node.y;
+    event.preventDefault();
+  }
+}
+
+function handleGraphSvgMouseMove(event) {
+  if (!draggingNode) return;
+
+  const coords = getSvgCoords(event);
+  const padding = 30;
+  draggingNode.x = Math.max(padding, Math.min(640 - padding, coords.x - dragOffsetX));
+  draggingNode.y = Math.max(padding, Math.min(340 - padding, coords.y - dragOffsetY));
+  renderGraph();
+}
+
+function handleGraphSvgMouseUp() {
+  if (draggingNode) {
+    draggingNode = null;
+    updateEditorHint("Node moved.");
+  }
 }
