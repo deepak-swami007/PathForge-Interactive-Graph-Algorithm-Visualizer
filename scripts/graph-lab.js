@@ -15,8 +15,12 @@ function renderGraph() {
   const selectedAlgorithm = graphAlgorithmSelect.value;
   const isSccMode = selectedAlgorithm === "kosaraju" || Object.keys(sccGroupByNode).length > 0;
   const isFlowMode = selectedAlgorithm === "edmondsKarp";
-  const isDirectedMode = isSccMode || isFlowMode;
-  const edgesToRender = isSccMode ? directedGraphEdges : (isFlowMode ? flowGraphEdges : graphEdges);
+  const isTopoMode = selectedAlgorithm === "topologicalSort";
+  const isBridgeMode = selectedAlgorithm === "tarjanBridges";
+  const isDirectedMode = isSccMode || isFlowMode || isTopoMode;
+  const edgesToRender = isSccMode
+    ? directedGraphEdges
+    : (isFlowMode ? flowGraphEdges : (isTopoMode ? dagEdges : (isBridgeMode ? bridgeGraphEdges : graphEdges)));
 
   if (isDirectedMode) {
     const defs = createSvgElement("defs");
@@ -64,7 +68,7 @@ function renderGraph() {
 
     graphSvg.appendChild(line);
 
-    if (isSccMode) {
+    if (isSccMode || isTopoMode || isBridgeMode) {
       continue;
     }
 
@@ -400,6 +404,107 @@ function edmondsKarp(source = "A", sink = "F") {
   return { maxFlow, augmentingPaths, usedEdges };
 }
 
+function topologicalSort() {
+  const nodeIds = graphNodes.map((node) => node.id);
+  const adjacency = buildDirectedAdjacency(dagEdges);
+  const indegree = {};
+  const queue = [];
+  const order = [];
+
+  for (const nodeId of nodeIds) {
+    indegree[nodeId] = 0;
+  }
+
+  for (const edge of dagEdges) {
+    indegree[edge.to]++;
+  }
+
+  for (const nodeId of nodeIds) {
+    if (indegree[nodeId] === 0) {
+      queue.push(nodeId);
+    }
+  }
+
+  while (queue.length > 0) {
+    const current = queue.shift();
+    order.push(current);
+
+    for (const nextNode of adjacency[current]) {
+      indegree[nextNode]--;
+
+      if (indegree[nextNode] === 0) {
+        queue.push(nextNode);
+      }
+    }
+  }
+
+  return {
+    order,
+    hasCycle: order.length !== nodeIds.length,
+  };
+}
+
+function buildUndirectedAdjacency(edges) {
+  const adjacency = {};
+
+  for (const node of graphNodes) {
+    adjacency[node.id] = [];
+  }
+
+  for (const edge of edges) {
+    adjacency[edge.from].push(edge.to);
+    adjacency[edge.to].push(edge.from);
+  }
+
+  return adjacency;
+}
+
+function tarjanBridges() {
+  const adjacency = buildUndirectedAdjacency(bridgeGraphEdges);
+  const visited = new Set();
+  const discovery = {};
+  const low = {};
+  const bridges = [];
+  let timer = 0;
+
+  function dfs(nodeId, parentId) {
+    visited.add(nodeId);
+    discovery[nodeId] = timer;
+    low[nodeId] = timer;
+    timer++;
+
+    for (const nextNode of adjacency[nodeId]) {
+      if (nextNode === parentId) {
+        continue;
+      }
+
+      if (!visited.has(nextNode)) {
+        dfs(nextNode, nodeId);
+        low[nodeId] = Math.min(low[nodeId], low[nextNode]);
+
+        if (low[nextNode] > discovery[nodeId]) {
+          bridges.push({ from: nodeId, to: nextNode });
+        }
+      } else {
+        low[nodeId] = Math.min(low[nodeId], discovery[nextNode]);
+      }
+    }
+  }
+
+  for (const node of graphNodes) {
+    if (!visited.has(node.id)) {
+      dfs(node.id, null);
+    }
+  }
+
+  return { bridges, visitedCount: visited.size };
+}
+
+function renderTopologicalOrder(order) {
+  const orderText = order.map((nodeId, index) => `${index + 1}. ${nodeId}`).join(" → ");
+  graphMatrixOutput.innerHTML = `<strong>Topological Order:</strong> ${orderText}`;
+}
+
 async function runGraphAlgorithm() {
   graphStatusStat.textContent = "Running";
   runGraphButton.disabled = true;
@@ -451,6 +556,10 @@ async function executeGraphAlgorithm(selectedAlgorithm) {
     result = floydWarshall();
   } else if (selectedAlgorithm === "edmondsKarp") {
     result = edmondsKarp();
+  } else if (selectedAlgorithm === "topologicalSort") {
+    result = topologicalSort();
+  } else if (selectedAlgorithm === "tarjanBridges") {
+    result = tarjanBridges();
   }
 
   const runtime = performance.now() - startTime;
@@ -539,6 +648,68 @@ async function executeGraphAlgorithm(selectedAlgorithm) {
       status: "Max flow complete",
       result: `Flow ${result.maxFlow}`,
       items: `${result.augmentingPaths.length} paths`,
+      runtime: runtimeText,
+    };
+    renderGraphComparisonTable();
+    return;
+  }
+
+  if (selectedAlgorithm === "topologicalSort") {
+    selectedGraphEdges = new Set();
+    selectedGraphNodes = new Set();
+    sccGroupByNode = {};
+    clearGraphMatrixOutput();
+    renderGraph();
+
+    for (const nodeId of result.order) {
+      selectedGraphNodes.add(nodeId);
+      renderGraph();
+      await sleep(getAnimationDelay() * 6);
+    }
+
+    renderTopologicalOrder(result.order);
+    graphAlgorithmStat.textContent = graphAlgorithmLabel;
+    graphStatusStat.textContent = result.hasCycle ? "Cycle detected" : "Order complete";
+    graphWeightStat.textContent = `${result.order.length} nodes`;
+    graphEdgesStat.textContent = `${dagEdges.length} edges`;
+    graphRuntimeStat.textContent = runtimeText;
+    graphComparisonStats[selectedAlgorithm] = {
+      status: result.hasCycle ? "Cycle detected" : "Order complete",
+      result: `${result.order.length} nodes`,
+      items: `${dagEdges.length} edges`,
+      runtime: runtimeText,
+    };
+    renderGraphComparisonTable();
+    return;
+  }
+
+  if (selectedAlgorithm === "tarjanBridges") {
+    selectedGraphEdges = new Set();
+    selectedGraphNodes = new Set();
+    sccGroupByNode = {};
+    clearGraphMatrixOutput();
+    renderGraph();
+
+    for (const bridge of result.bridges) {
+      selectedGraphEdges.add(makeEdgeKey(bridge.from, bridge.to));
+      selectedGraphNodes.add(bridge.from);
+      selectedGraphNodes.add(bridge.to);
+      renderGraph();
+      await sleep(getAnimationDelay() * 6);
+    }
+
+    graphMatrixOutput.innerHTML = result.bridges.length > 0
+      ? `<strong>Bridge Edges:</strong> ${result.bridges.map((edge) => `${edge.from}-${edge.to}`).join(", ")}`
+      : "<strong>Bridge Edges:</strong> None";
+    graphAlgorithmStat.textContent = graphAlgorithmLabel;
+    graphStatusStat.textContent = "Bridges complete";
+    graphWeightStat.textContent = `${result.bridges.length} bridges`;
+    graphEdgesStat.textContent = `${bridgeGraphEdges.length} edges`;
+    graphRuntimeStat.textContent = runtimeText;
+    graphComparisonStats[selectedAlgorithm] = {
+      status: "Bridges complete",
+      result: `${result.bridges.length} bridges`,
+      items: `${bridgeGraphEdges.length} edges`,
       runtime: runtimeText,
     };
     renderGraphComparisonTable();

@@ -111,10 +111,32 @@ const flowGraphEdges = [
   { from: "E", to: "F", capacity: 6 },
 ];
 
+const dagEdges = [
+  { from: "A", to: "B" },
+  { from: "A", to: "D" },
+  { from: "B", to: "C" },
+  { from: "B", to: "E" },
+  { from: "D", to: "E" },
+  { from: "C", to: "F" },
+  { from: "E", to: "F" },
+];
+
+const bridgeGraphEdges = [
+  { from: "A", to: "B" },
+  { from: "B", to: "C" },
+  { from: "C", to: "A" },
+  { from: "C", to: "D" },
+  { from: "D", to: "E" },
+  { from: "E", to: "F" },
+  { from: "F", to: "D" },
+];
+
 const graphAlgorithmLabels = {
   prim: "Prim's MST",
   kruskal: "Kruskal's MST",
   kosaraju: "Kosaraju SCC",
   floydWarshall: "Floyd-Warshall",
   edmondsKarp: "Edmonds-Karp Max Flow",
+  topologicalSort: "Topological Sort",
+  tarjanBridges: "Tarjan Bridges",
 };
