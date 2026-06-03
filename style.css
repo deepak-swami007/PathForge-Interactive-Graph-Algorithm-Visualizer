@@ -31,10 +31,68 @@ select {
 }
 
 .app-header {
-  padding: 28px 32px 18px;
+  padding: 24px 32px 18px;
   background: var(--surface);
   border-bottom: 1px solid var(--line);
 }
+
+.header-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 20px;
+}
+
+.header-brand {
+  flex: 1;
+}
+
+/* Tab Navigation Container */
+.tab-navigation {
+  display: flex;
+  background: #f1f5f9;
+  padding: 4px;
+  border-radius: 30px;
+  border: 1px solid var(--line);
+}
+
+/* Individual Tab Button */
+.tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  color: var(--muted);
+  border: none;
+  border-radius: 26px;
+  padding: 8px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  min-height: auto;
+}
+
+.tab-btn:hover {
+  background: rgba(148, 163, 184, 0.15);
+  color: var(--text);
+}
+
+.tab-btn:active {
+  transform: scale(0.96);
+}
+
+/* Active Tab Button styling */
+.tab-btn.active {
+  background: var(--surface);
+  color: var(--primary);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.12), 0 1px 3px rgba(37, 99, 235, 0.08);
+}
+
+.tab-icon {
+  font-size: 16px;
+}
+
 
 .eyebrow {
   margin: 0 0 6px;
@@ -442,9 +500,57 @@ tbody tr:last-child td {
   font-weight: 700;
 }
 
+/* Tab visibility and transitions */
+.app-shell.tab-grid .graph-lab {
+  display: none !important;
+}
+
+.app-shell.tab-graph .controls-panel,
+.app-shell.tab-graph .workspace,
+.app-shell.tab-graph .stats-panel {
+  display: none !important;
+}
+
+.app-shell.tab-graph {
+  grid-template-columns: 1fr;
+}
+
+@keyframes tabFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.app-shell.tab-grid .controls-panel,
+.app-shell.tab-grid .workspace,
+.app-shell.tab-grid .stats-panel,
+.app-shell.tab-graph .graph-lab {
+  animation: tabFadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
 @media (max-width: 900px) {
+  .header-container {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+  }
+
+  .tab-navigation {
+    width: 100%;
+  }
+
+  .tab-btn {
+    flex: 1;
+    justify-content: center;
+  }
+
   .app-shell {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr !important;
   }
 
   .workspace-header {
@@ -454,4 +560,93 @@ tbody tr:last-child td {
   .graph-layout {
     grid-template-columns: 1fr;
   }
+}
+
+
+/* Graph Editor Styles */
+.graph-svg.edit-mode {
+  cursor: crosshair;
+}
+
+.graph-svg.edit-mode.tool-move {
+  cursor: grab;
+}
+
+.graph-svg.edit-mode.tool-delete {
+  cursor: pointer;
+}
+
+.graph-svg.edit-mode.tool-addEdge {
+  cursor: pointer;
+}
+
+.graph-svg.edit-mode.tool-select {
+  cursor: default;
+}
+
+.graph-node.editable:hover {
+  filter: brightness(1.15);
+  stroke-width: 5;
+}
+
+.graph-node.pending-edge {
+  fill: #fef3c7;
+  stroke: #f59e0b;
+  stroke-width: 5;
+  stroke-dasharray: 6 3;
+  animation: pendingPulse 1s ease-in-out infinite;
+}
+
+.graph-node.delete-hover {
+  fill: #fee2e2;
+  stroke: #ef4444;
+  stroke-width: 5;
+}
+
+.graph-edge.delete-hover {
+  stroke: #ef4444;
+  stroke-width: 6;
+  stroke-dasharray: 8 4;
+}
+
+@keyframes pendingPulse {
+  0%, 100% { stroke-opacity: 1; }
+  50% { stroke-opacity: 0.5; }
+}
+
+.graph-editor-hint {
+  margin-top: 10px;
+  padding: 10px 14px;
+  background: linear-gradient(135deg, #eff6ff, #f0fdf4);
+  border: 1px solid #93c5fd;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #1e40af;
+  display: none;
+}
+
+.graph-editor-hint.visible {
+  display: block;
+}
+
+.graph-editor-hint .hint-icon {
+  margin-right: 6px;
+}
+
+#clearGraphBtn {
+  background: #ffffff;
+  color: var(--text);
+  border-color: var(--line);
+}
+
+#clearGraphBtn:hover {
+  background: #fee2e2;
+  border-color: #fca5a5;
+  color: #dc2626;
+}
+
+.graph-node.dragging {
+  cursor: grabbing;
+  stroke-width: 6;
+  filter: drop-shadow(0 2px 8px rgba(37, 99, 235, 0.3));
 }
