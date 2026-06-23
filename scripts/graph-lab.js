@@ -75,11 +75,11 @@ function renderGraph() {
     const midX = (fromNode.x + toNode.x) / 2;
     const midY = (fromNode.y + toNode.y) / 2;
     const labelBg = createSvgElement("rect");
-    labelBg.setAttribute("x", midX - 13);
-    labelBg.setAttribute("y", midY - 12);
-    labelBg.setAttribute("width", 26);
-    labelBg.setAttribute("height", 24);
-    labelBg.setAttribute("rx", 6);
+    labelBg.setAttribute("x", midX - 10);
+    labelBg.setAttribute("y", midY - 9);
+    labelBg.setAttribute("width", 20);
+    labelBg.setAttribute("height", 18);
+    labelBg.setAttribute("rx", 4);
     labelBg.setAttribute("class", "edge-label-bg");
     graphSvg.appendChild(labelBg);
 
@@ -115,7 +115,14 @@ function renderGraph() {
 function renderGraphComparisonTable() {
   graphComparisonBody.innerHTML = "";
 
-  for (const algorithm of Object.keys(graphAlgorithmLabels)) {
+  if (graphCompareList.length === 0) {
+    const row = document.createElement("tr");
+    row.innerHTML = `<td colspan="6" style="text-align: center; color: var(--muted); padding: 16px;">No algorithms added to compare. Run an algorithm or add one above.</td>`;
+    graphComparisonBody.appendChild(row);
+    return;
+  }
+
+  for (const algorithm of graphCompareList) {
     const stats = graphComparisonStats[algorithm];
     const row = document.createElement("tr");
 
@@ -125,6 +132,7 @@ function renderGraphComparisonTable() {
       <td>${stats ? stats.result : "-"}</td>
       <td>${stats ? stats.items : "-"}</td>
       <td>${stats ? stats.runtime : "-"}</td>
+      <td><button class="remove-compare-btn" data-algo="${algorithm}" type="button">Remove</button></td>
     `;
 
     graphComparisonBody.appendChild(row);
@@ -550,6 +558,10 @@ async function executeGraphAlgorithm(selectedAlgorithm) {
   let result = null;
   const startTime = performance.now();
 
+  if (!graphCompareList.includes(selectedAlgorithm)) {
+    graphCompareList.push(selectedAlgorithm);
+  }
+
   graphStatusStat.textContent = `Running ${graphAlgorithmLabel}`;
 
   if (selectedAlgorithm === "prim") {
@@ -758,6 +770,16 @@ function resetGraphLab() {
   selectedGraphNodes = new Set();
   sccGroupByNode = {};
   graphAlgorithmStat.textContent = graphAlgorithmSelect.options[graphAlgorithmSelect.selectedIndex].textContent;
+
+  const complexity = graphComplexity[graphAlgorithmSelect.value];
+  if (complexity) {
+    graphTimeComplexity.textContent = complexity.time;
+    graphSpaceComplexity.textContent = complexity.space;
+  } else {
+    graphTimeComplexity.textContent = "-";
+    graphSpaceComplexity.textContent = "-";
+  }
+
   graphStatusStat.textContent = "Ready";
   graphWeightStat.textContent = "0";
   graphEdgesStat.textContent = "0";

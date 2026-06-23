@@ -300,10 +300,93 @@ button:hover {
   font-size: 15px;
 }
 
+.complexity-info {
+  margin-top: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  font-size: 13px;
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+}
+
+.complexity-info span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.complexity-info code,
+.graph-result code,
+.stats-panel code {
+  background: #e2e8f0;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: 'Courier New', Courier, monospace;
+  font-weight: 700;
+  color: var(--primary-dark);
+}
+
 .info-box p {
   margin-bottom: 0;
   color: var(--muted);
   line-height: 1.5;
+}
+
+.comparison-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.comparison-header h3 {
+  margin: 0 !important;
+}
+
+.compare-select {
+  min-height: 32px !important;
+  height: 32px;
+  padding: 0 10px;
+  font-size: 13px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  outline: none;
+  font-weight: 600;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.compare-select:hover {
+  border-color: var(--primary);
+}
+
+.compare-select:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+}
+
+.remove-compare-btn {
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid transparent;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  min-height: auto;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.remove-compare-btn:hover {
+  background: #fee2e2;
+  color: #dc2626;
+  border-color: #fca5a5;
 }
 
 .table-wrap {
@@ -382,24 +465,24 @@ tbody tr:last-child td {
 
 .graph-edge {
   stroke: #94a3b8;
-  stroke-width: 4;
+  stroke-width: 3;
   stroke-linecap: round;
 }
 
 .graph-edge.selected {
   stroke: var(--start);
-  stroke-width: 6;
+  stroke-width: 4.5;
 }
 
 .graph-edge.directed {
   stroke: #64748b;
-  stroke-width: 3;
+  stroke-width: 2.2;
 }
 
 .graph-node {
   fill: #ffffff;
   stroke: var(--primary);
-  stroke-width: 4;
+  stroke-width: 3;
 }
 
 .graph-node.active {
@@ -427,10 +510,9 @@ tbody tr:last-child td {
   stroke: #db2777;
 }
 
-.graph-label,
-.edge-label {
+.graph-label {
   fill: var(--text);
-  font-size: 15px;
+  font-size: 12px;
   font-weight: 700;
   text-anchor: middle;
   dominant-baseline: middle;
@@ -439,7 +521,11 @@ tbody tr:last-child td {
 
 .edge-label {
   fill: var(--muted);
-  font-size: 13px;
+  font-size: 10px;
+  font-weight: 700;
+  text-anchor: middle;
+  dominant-baseline: middle;
+  pointer-events: none;
 }
 
 .edge-label-bg {

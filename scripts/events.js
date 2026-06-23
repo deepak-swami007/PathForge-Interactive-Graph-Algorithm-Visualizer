@@ -158,6 +158,6 @@ if (savedTab === "grid" || savedTab === "graph") {
 createGrid();
 updateAlgorithmLabel();
 renderComparisonTable();
-renderGraph();
+resetGraphLab();
 renderGraphComparisonTable();
 

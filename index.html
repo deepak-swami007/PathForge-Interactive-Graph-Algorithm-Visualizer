@@ -96,7 +96,20 @@
         <p id="algorithmInfo">BFS explores level by level and finds the shortest path when every move has the same cost.</p>
       </article>
       <section class="comparison-box" aria-labelledby="comparison-title">
-        <h3 id="comparison-title">Last Run Comparison</h3>
+        <div class="comparison-header">
+          <h3 id="comparison-title">Last Run Comparison</h3>
+          <div class="comparison-actions">
+            <select id="addGridCompare" class="compare-select">
+              <option value="" disabled selected>+ Add Grid Algorithm</option>
+              <option value="bfs">BFS</option>
+              <option value="dfs">DFS</option>
+              <option value="dijkstra">Dijkstra</option>
+              <option value="astar">A*</option>
+              <option value="bellmanFord">Bellman-Ford</option>
+              <option value="bidirectionalBfs">Bidirectional BFS</option>
+            </select>
+          </div>
+        </div>
         <div class="table-wrap">
           <table>
             <thead>
@@ -107,6 +120,7 @@
                 <th>Length</th>
                 <th>Cost</th>
                 <th>Runtime</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody id="comparisonBody"></tbody>
@@ -125,6 +139,14 @@
         <div>
           <dt>Algorithm</dt>
           <dd id="algorithmStat">BFS</dd>
+        </div>
+        <div>
+          <dt>Time Complexity</dt>
+          <dd><code id="timeComplexity">-</code></dd>
+        </div>
+        <div>
+          <dt>Space Complexity</dt>
+          <dd><code id="spaceComplexity">-</code></dd>
         </div>
         <div>
           <dt>Status</dt>
@@ -209,6 +231,14 @@
               <dd id="graphStatusStat">Ready</dd>
             </div>
             <div>
+              <dt>Time Complexity</dt>
+              <dd><code id="graphTimeComplexity">-</code></dd>
+            </div>
+            <div>
+              <dt>Space Complexity</dt>
+              <dd><code id="graphSpaceComplexity">-</code></dd>
+            </div>
+            <div>
               <dt>Primary Result</dt>
               <dd id="graphWeightStat">0</dd>
             </div>
@@ -224,7 +254,21 @@
         </aside>
       </div>
       <section class="comparison-box" aria-labelledby="graph-comparison-title">
-        <h3 id="graph-comparison-title">Graph Algorithm Comparison</h3>
+        <div class="comparison-header">
+          <h3 id="graph-comparison-title">Graph Algorithm Comparison</h3>
+          <div class="comparison-actions">
+            <select id="addGraphCompare" class="compare-select">
+              <option value="" disabled selected>+ Add Graph Algorithm</option>
+              <option value="prim">Prim's MST</option>
+              <option value="kruskal">Kruskal's MST</option>
+              <option value="kosaraju">Kosaraju SCC</option>
+              <option value="floydWarshall">Floyd-Warshall</option>
+              <option value="edmondsKarp">Edmonds-Karp Max Flow</option>
+              <option value="topologicalSort">Topological Sort</option>
+              <option value="tarjanBridges">Tarjan Bridges</option>
+            </select>
+          </div>
+        </div>
         <div class="table-wrap">
           <table>
             <thead>
@@ -234,6 +278,7 @@
                 <th>Result</th>
                 <th>Items</th>
                 <th>Runtime</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody id="graphComparisonBody"></tbody>
