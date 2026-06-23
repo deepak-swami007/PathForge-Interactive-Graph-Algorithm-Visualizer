@@ -1,5 +1,53 @@
+function runMultiTargetAlgorithm(algoName) {
+  let currentStart = startCell;
+  let remainingTargets = [...targetCells];
+  let finalVisitOrder = [];
+  let finalPath = [];
+  let finalCost = 0;
+
+  while (remainingTargets.length > 0) {
+    let stageResult;
+    if (algoName === "bfs") {
+      stageResult = bfsStage(currentStart, remainingTargets);
+    } else if (algoName === "dfs") {
+      stageResult = dfsStage(currentStart, remainingTargets);
+    } else if (algoName === "dijkstra") {
+      stageResult = dijkstraStage(currentStart, remainingTargets);
+    } else if (algoName === "astar") {
+      stageResult = astarStage(currentStart, remainingTargets);
+    } else if (algoName === "bellmanFord") {
+      stageResult = bellmanFordStage(currentStart, remainingTargets);
+    } else if (algoName === "bidirectionalBfs") {
+      stageResult = bidirectionalBfsStage(currentStart, remainingTargets);
+    }
+
+    if (!stageResult || stageResult.path.length === 0) {
+      break;
+    }
+
+    finalVisitOrder.push(...stageResult.visitOrder);
+
+    if (finalPath.length > 0) {
+      finalPath.push(...stageResult.path.slice(1));
+    } else {
+      finalPath.push(...stageResult.path);
+    }
+
+    finalCost += stageResult.cost || 0;
+
+    currentStart = stageResult.reachedTarget;
+    remainingTargets = remainingTargets.filter(t => !isSameCell(t, currentStart));
+  }
+
+  return { visitOrder: finalVisitOrder, path: finalPath, cost: finalCost };
+}
+
 function bfs() {
-  const queue = [startCell];
+  return runMultiTargetAlgorithm("bfs");
+}
+
+function bfsStage(start, targets) {
+  const queue = [start];
   const visited = [];
   const parent = {};
   const visitOrder = [];
@@ -8,7 +56,7 @@ function bfs() {
     visited.push(Array(COLS).fill(false));
   }
 
-  visited[startCell.row][startCell.col] = true;
+  visited[start.row][start.col] = true;
 
   const directions = [
     { row: -1, col: 0 },
@@ -17,11 +65,14 @@ function bfs() {
     { row: 0, col: -1 },
   ];
 
+  let reachedTarget = null;
+
   while (queue.length > 0) {
     const current = queue.shift();
     visitOrder.push(current);
 
-    if (isSameCell(current, targetCell)) {
+    if (targets.some(t => isSameCell(current, t))) {
+      reachedTarget = current;
       break;
     }
 
@@ -43,13 +94,47 @@ function bfs() {
     }
   }
 
-  const path = buildPath(parent);
-  return { visitOrder, path };
+  const path = reachedTarget ? buildPathStage(parent, start, reachedTarget) : [];
+  let cost = 0;
+  if (path.length > 0) {
+    for (let i = 1; i < path.length; i++) {
+      cost += getCellCost(path[i].row, path[i].col);
+    }
+  }
+  return { visitOrder, path, cost, reachedTarget };
 }
 
 function bidirectionalBfs() {
-  const startQueue = [startCell];
-  const targetQueue = [targetCell];
+  return runMultiTargetAlgorithm("bidirectionalBfs");
+}
+
+function bidirectionalBfsStage(start, targets) {
+  let bestResult = null;
+  let minPathLength = Infinity;
+
+  for (const target of targets) {
+    const result = runSingleBidirectionalBfs(start, target);
+    if (result.path.length > 0 && result.path.length < minPathLength) {
+      minPathLength = result.path.length;
+      bestResult = { ...result, reachedTarget: target };
+    }
+  }
+
+  if (bestResult) {
+    let cost = 0;
+    for (let i = 1; i < bestResult.path.length; i++) {
+      cost += getCellCost(bestResult.path[i].row, bestResult.path[i].col);
+    }
+    bestResult.cost = cost;
+    return bestResult;
+  }
+
+  return { visitOrder: [], path: [], cost: 0, reachedTarget: null };
+}
+
+function runSingleBidirectionalBfs(start, target) {
+  const startQueue = [start];
+  const targetQueue = [target];
   const visitedFromStart = [];
   const visitedFromTarget = [];
   const parentFromStart = {};
@@ -62,8 +147,8 @@ function bidirectionalBfs() {
     visitedFromTarget.push(Array(COLS).fill(false));
   }
 
-  visitedFromStart[startCell.row][startCell.col] = true;
-  visitedFromTarget[targetCell.row][targetCell.col] = true;
+  visitedFromStart[start.row][start.col] = true;
+  visitedFromTarget[target.row][target.col] = true;
 
   const directions = [
     { row: -1, col: 0 },
@@ -97,7 +182,7 @@ function bidirectionalBfs() {
   }
 
   const path = meetingCell
-    ? buildBidirectionalPath(meetingCell, parentFromStart, parentFromTarget)
+    ? buildBidirectionalPathStage(meetingCell, start, target, parentFromStart, parentFromTarget)
     : [];
 
   return { visitOrder, path };
@@ -137,36 +222,40 @@ function expandBidirectionalLayer(queue, ownVisited, otherVisited, ownParent, di
   return null;
 }
 
-function buildBidirectionalPath(meetingCell, parentFromStart, parentFromTarget) {
+function buildBidirectionalPathStage(meetingCell, start, target, parentFromStart, parentFromTarget) {
   const leftPath = [];
   let current = meetingCell;
 
-  while (!isSameCell(current, startCell)) {
+  while (!isSameCell(current, start)) {
     leftPath.push(current);
     current = parentFromStart[makeKey(current.row, current.col)];
   }
 
-  leftPath.push(startCell);
+  leftPath.push(start);
   leftPath.reverse();
 
-  if (isSameCell(meetingCell, targetCell)) {
+  if (isSameCell(meetingCell, target)) {
     return leftPath;
   }
 
   const rightPath = [];
   current = parentFromTarget[makeKey(meetingCell.row, meetingCell.col)];
 
-  while (current && !isSameCell(current, targetCell)) {
+  while (current && !isSameCell(current, target)) {
     rightPath.push(current);
     current = parentFromTarget[makeKey(current.row, current.col)];
   }
 
-  rightPath.push(targetCell);
+  rightPath.push(target);
   return [...leftPath, ...rightPath];
 }
 
 function dfs() {
-  const stack = [startCell];
+  return runMultiTargetAlgorithm("dfs");
+}
+
+function dfsStage(start, targets) {
+  const stack = [start];
   const visited = [];
   const parent = {};
   const visitOrder = [];
@@ -175,7 +264,7 @@ function dfs() {
     visited.push(Array(COLS).fill(false));
   }
 
-  visited[startCell.row][startCell.col] = true;
+  visited[start.row][start.col] = true;
 
   const directions = [
     { row: -1, col: 0 },
@@ -184,11 +273,14 @@ function dfs() {
     { row: 0, col: -1 },
   ];
 
+  let reachedTarget = null;
+
   while (stack.length > 0) {
     const current = stack.pop();
     visitOrder.push(current);
 
-    if (isSameCell(current, targetCell)) {
+    if (targets.some(t => isSameCell(current, t))) {
+      reachedTarget = current;
       break;
     }
 
@@ -210,24 +302,34 @@ function dfs() {
     }
   }
 
-  const path = buildPath(parent);
-  return { visitOrder, path };
+  const path = reachedTarget ? buildPathStage(parent, start, reachedTarget) : [];
+  let cost = 0;
+  if (path.length > 0) {
+    for (let i = 1; i < path.length; i++) {
+      cost += getCellCost(path[i].row, path[i].col);
+    }
+  }
+  return { visitOrder, path, cost, reachedTarget };
 }
 
 function dijkstra() {
+  return runMultiTargetAlgorithm("dijkstra");
+}
+
+function dijkstraStage(start, targets) {
   const distances = [];
   const visited = [];
   const parent = {};
   const visitOrder = [];
   const priorityQueue = new MinHeap((first, second) => first.distance - second.distance);
-  priorityQueue.push({ ...startCell, distance: 0 });
+  priorityQueue.push({ ...start, distance: 0 });
 
   for (let row = 0; row < ROWS; row++) {
     distances.push(Array(COLS).fill(Infinity));
     visited.push(Array(COLS).fill(false));
   }
 
-  distances[startCell.row][startCell.col] = 0;
+  distances[start.row][start.col] = 0;
 
   const directions = [
     { row: -1, col: 0 },
@@ -235,6 +337,8 @@ function dijkstra() {
     { row: 1, col: 0 },
     { row: 0, col: -1 },
   ];
+
+  let reachedTarget = null;
 
   while (priorityQueue.size() > 0) {
     const current = priorityQueue.pop();
@@ -246,7 +350,8 @@ function dijkstra() {
     visited[current.row][current.col] = true;
     visitOrder.push({ row: current.row, col: current.col });
 
-    if (isSameCell(current, targetCell)) {
+    if (targets.some(t => isSameCell(current, t))) {
+      reachedTarget = current;
       break;
     }
 
@@ -268,9 +373,9 @@ function dijkstra() {
     }
   }
 
-  const path = buildPath(parent);
-  const cost = distances[targetCell.row][targetCell.col];
-  return { visitOrder, path, cost: Number.isFinite(cost) ? cost : 0 };
+  const path = reachedTarget ? buildPathStage(parent, start, reachedTarget) : [];
+  const cost = reachedTarget ? distances[reachedTarget.row][reachedTarget.col] : 0;
+  return { visitOrder, path, cost: Number.isFinite(cost) ? cost : 0, reachedTarget };
 }
 
 function manhattanDistance(first, second) {
@@ -278,15 +383,29 @@ function manhattanDistance(first, second) {
 }
 
 function astar() {
+  return runMultiTargetAlgorithm("astar");
+}
+
+function astarStage(start, targets) {
   const gCost = [];
   const visited = [];
   const parent = {};
   const visitOrder = [];
   const openSet = new MinHeap((first, second) => first.f - second.f);
+
+  const getMinHeuristic = (cell) => {
+    let minH = Infinity;
+    for (const t of targets) {
+      const h = manhattanDistance(cell, t);
+      if (h < minH) minH = h;
+    }
+    return minH;
+  };
+
   openSet.push({
-    ...startCell,
+    ...start,
     g: 0,
-    f: manhattanDistance(startCell, targetCell),
+    f: getMinHeuristic(start),
   });
 
   for (let row = 0; row < ROWS; row++) {
@@ -294,7 +413,7 @@ function astar() {
     visited.push(Array(COLS).fill(false));
   }
 
-  gCost[startCell.row][startCell.col] = 0;
+  gCost[start.row][start.col] = 0;
 
   const directions = [
     { row: -1, col: 0 },
@@ -302,6 +421,8 @@ function astar() {
     { row: 1, col: 0 },
     { row: 0, col: -1 },
   ];
+
+  let reachedTarget = null;
 
   while (openSet.size() > 0) {
     const current = openSet.pop();
@@ -313,7 +434,8 @@ function astar() {
     visited[current.row][current.col] = true;
     visitOrder.push({ row: current.row, col: current.col });
 
-    if (isSameCell(current, targetCell)) {
+    if (targets.some(t => isSameCell(current, t))) {
+      reachedTarget = current;
       break;
     }
 
@@ -334,15 +456,15 @@ function astar() {
         openSet.push({
           ...nextCell,
           g: nextGCost,
-          f: nextGCost + manhattanDistance(nextCell, targetCell),
+          f: nextGCost + getMinHeuristic(nextCell),
         });
       }
     }
   }
 
-  const path = buildPath(parent);
-  const cost = gCost[targetCell.row][targetCell.col];
-  return { visitOrder, path, cost: Number.isFinite(cost) ? cost : 0 };
+  const path = reachedTarget ? buildPathStage(parent, start, reachedTarget) : [];
+  const cost = reachedTarget ? gCost[reachedTarget.row][reachedTarget.col] : 0;
+  return { visitOrder, path, cost: Number.isFinite(cost) ? cost : 0, reachedTarget };
 }
 
 function getGridEdges() {
@@ -381,6 +503,10 @@ function getGridEdges() {
 }
 
 function bellmanFord() {
+  return runMultiTargetAlgorithm("bellmanFord");
+}
+
+function bellmanFordStage(start, targets) {
   const distances = [];
   const parent = {};
   const visitOrder = [];
@@ -390,7 +516,7 @@ function bellmanFord() {
     distances.push(Array(COLS).fill(Infinity));
   }
 
-  distances[startCell.row][startCell.col] = 0;
+  distances[start.row][start.col] = 0;
 
   for (let iteration = 0; iteration < ROWS * COLS - 1; iteration++) {
     let changed = false;
@@ -417,25 +543,34 @@ function bellmanFord() {
     }
   }
 
-  const path = buildPath(parent);
-  const cost = distances[targetCell.row][targetCell.col];
-  return { visitOrder, path, cost: Number.isFinite(cost) ? cost : 0 };
+  let reachedTarget = null;
+  let minCost = Infinity;
+  for (const t of targets) {
+    const dist = distances[t.row][t.col];
+    if (dist < minCost) {
+      minCost = dist;
+      reachedTarget = t;
+    }
+  }
+
+  const path = reachedTarget ? buildPathStage(parent, start, reachedTarget) : [];
+  return { visitOrder, path, cost: Number.isFinite(minCost) ? minCost : 0, reachedTarget };
 }
 
-function buildPath(parent) {
+function buildPathStage(parent, start, target) {
   const path = [];
-  let current = targetCell;
+  let current = target;
 
-  if (!parent[makeKey(current.row, current.col)] && !isSameCell(startCell, targetCell)) {
+  if (!parent[makeKey(current.row, current.col)] && !isSameCell(start, target)) {
     return path;
   }
 
-  while (!isSameCell(current, startCell)) {
+  while (!isSameCell(current, start)) {
     path.push(current);
     current = parent[makeKey(current.row, current.col)];
   }
 
-  path.push(startCell);
+  path.push(start);
   path.reverse();
   return path;
 }

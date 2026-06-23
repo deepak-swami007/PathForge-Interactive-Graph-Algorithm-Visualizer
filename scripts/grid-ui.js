@@ -1,6 +1,13 @@
-async function animateCells(cells, className, delayMs) {
+async function animateCells(cells, className, delayMs, sessionId) {
   for (const cellPosition of cells) {
-    if (isSameCell(cellPosition, startCell) || isSameCell(cellPosition, targetCell)) {
+    if (sessionId !== gridAnimationId) {
+      return;
+    }
+    await checkPause();
+    if (sessionId !== gridAnimationId) {
+      return;
+    }
+    if (isSameCell(cellPosition, startCell) || targetCells.some(t => isSameCell(cellPosition, t))) {
       continue;
     }
 
@@ -18,12 +25,24 @@ async function runSelectedAlgorithm() {
   setControlsDisabled(true);
 
   const selectedAlgorithm = algorithmSelect.value;
+  if (!gridCompareList.includes(selectedAlgorithm)) {
+    gridCompareList.push(selectedAlgorithm);
+  }
+
+  gridAnimationId++;
+  const runSessionId = gridAnimationId;
 
   const runResult = runAlgorithmByName(selectedAlgorithm);
   updateStatsFromRun(selectedAlgorithm, runResult);
-  await animateRunResult(runResult);
-  statusStat.textContent = runResult.path.length > 0 ? "Path found" : "No path found";
-  setControlsDisabled(false);
+  await animateRunResult(runResult, runSessionId);
+
+  if (runSessionId === gridAnimationId) {
+    statusStat.textContent = runResult.path.length > 0 ? "Path found" : "No path found";
+    setControlsDisabled(false);
+    document.getElementById("pauseBtn").textContent = "Pause";
+    document.getElementById("pauseBtn").disabled = true;
+    isPaused = false;
+  }
 }
 
 function runAlgorithmByName(selectedAlgorithm) {
@@ -69,19 +88,26 @@ function updateStatsFromRun(selectedAlgorithm, result) {
   renderComparisonTable();
 }
 
-async function animateRunResult(result) {
+async function animateRunResult(result, sessionId) {
   const delay = getAnimationDelay();
-  await animateCells(result.visitOrder, "visited", delay);
-  await animateCells(result.path, "path", delay * 2);
+  await animateCells(result.visitOrder, "visited", delay, sessionId);
+  if (sessionId !== gridAnimationId) return;
+  await animateCells(result.path, "path", delay * 2, sessionId);
 }
 
 async function runAllAlgorithms() {
   clearAlgorithmPaint();
   resetStats();
+  gridCompareList = [...gridAlgorithms];
   clearComparisonTable();
   setControlsDisabled(true);
 
+  gridAnimationId++;
+  const runSessionId = gridAnimationId;
+
   for (const algorithm of gridAlgorithms) {
+    if (runSessionId !== gridAnimationId) break;
+
     algorithmSelect.value = algorithm;
     updateAlgorithmLabel();
     statusStat.textContent = `Running ${algorithmLabels[algorithm]}`;
@@ -89,12 +115,20 @@ async function runAllAlgorithms() {
     const result = runAlgorithmByName(algorithm);
     updateStatsFromRun(algorithm, result);
     clearAlgorithmPaint();
-    await animateRunResult(result);
+    await animateRunResult(result, runSessionId);
+    if (runSessionId !== gridAnimationId) break;
+    await checkPause();
+    if (runSessionId !== gridAnimationId) break;
     await sleep(120);
   }
 
-  statusStat.textContent = "Run All complete";
-  setControlsDisabled(false);
+  if (runSessionId === gridAnimationId) {
+    statusStat.textContent = "Run All complete";
+    setControlsDisabled(false);
+    document.getElementById("pauseBtn").textContent = "Pause";
+    document.getElementById("pauseBtn").disabled = true;
+    isPaused = false;
+  }
 }
 
 function createGrid() {
@@ -120,4 +154,14 @@ function updateAlgorithmLabel() {
   const selectedOption = algorithmSelect.options[algorithmSelect.selectedIndex];
   algorithmStat.textContent = selectedOption.textContent;
   algorithmInfo.textContent = algorithmInfoText[algorithmSelect.value];
+
+  const complexity = gridComplexity[algorithmSelect.value];
+  if (complexity) {
+    timeComplexity.textContent = complexity.time;
+    spaceComplexity.textContent = complexity.space;
+  } else {
+    timeComplexity.textContent = "-";
+    spaceComplexity.textContent = "-";
+  }
 }
+
