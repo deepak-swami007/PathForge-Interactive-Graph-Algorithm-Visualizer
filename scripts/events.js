@@ -78,8 +78,123 @@ resetButton.addEventListener("click", () => {
   statusStat.textContent = "Ready";
 });
 
+graphModeSelect.addEventListener("change", () => {
+  if (graphModeSelect.value === "preset") {
+    switchToPresetGraph();
+  } else {
+    switchToCustomGraph();
+  }
+});
+
+graphEditToolSelect.addEventListener("change", () => {
+  pendingEdgeFrom = null;
+  draggingNode = null;
+  updateSvgCursorClass();
+  renderGraph();
+
+  const toolHints = {
+    select: "Select mode — click nodes or edges to inspect.",
+    addNode: "Click on the canvas to place a new node.",
+    addEdge: "Click a source node, then click a destination node to create an edge.",
+    delete: "Click a node or edge to delete it.",
+    move: "Click and drag a node to reposition it.",
+  };
+  updateEditorHint(toolHints[graphEditToolSelect.value] || "");
+});
+
+graphSvg.addEventListener("click", handleGraphSvgClick);
+graphSvg.addEventListener("mousedown", handleGraphSvgMouseDown);
+graphSvg.addEventListener("mousemove", handleGraphSvgMouseMove);
+graphSvg.addEventListener("mouseup", handleGraphSvgMouseUp);
+document.addEventListener("mouseup", handleGraphSvgMouseUp);
+
+clearGraphButton.addEventListener("click", () => {
+  if (!isCustomGraph) {
+    graphModeSelect.value = "custom";
+    switchToCustomGraph();
+  }
+  clearCustomGraph();
+});
+
+// Comparison List Management Event Listeners
+addGridCompare.addEventListener("change", () => {
+  const selectedAlgo = addGridCompare.value;
+  if (selectedAlgo && !gridCompareList.includes(selectedAlgo)) {
+    gridCompareList.push(selectedAlgo);
+    renderComparisonTable();
+  }
+  addGridCompare.value = "";
+});
+
+addGraphCompare.addEventListener("change", () => {
+  const selectedAlgo = addGraphCompare.value;
+  if (selectedAlgo && !graphCompareList.includes(selectedAlgo)) {
+    graphCompareList.push(selectedAlgo);
+    renderGraphComparisonTable();
+  }
+  addGraphCompare.value = "";
+});
+
+comparisonBody.addEventListener("click", (event) => {
+  const removeBtn = event.target.closest(".remove-compare-btn");
+  if (removeBtn) {
+    const algo = removeBtn.dataset.algo;
+    gridCompareList = gridCompareList.filter(item => item !== algo);
+    renderComparisonTable();
+  }
+});
+
+graphComparisonBody.addEventListener("click", (event) => {
+  const removeBtn = event.target.closest(".remove-compare-btn");
+  if (removeBtn) {
+    const algo = removeBtn.dataset.algo;
+    graphCompareList = graphCompareList.filter(item => item !== algo);
+    renderGraphComparisonTable();
+  }
+});
+
+// Tab switching functionality
+const tabButtons = document.querySelectorAll(".tab-btn");
+const appShell = document.querySelector(".app-shell");
+
+function switchTab(tabName) {
+  tabButtons.forEach(btn => {
+    if (btn.dataset.tab === tabName) {
+      btn.classList.add("active");
+    } else {
+      btn.classList.remove("active");
+    }
+  });
+
+  if (tabName === "grid") {
+    appShell.classList.remove("tab-graph");
+    appShell.classList.add("tab-grid");
+  } else {
+    appShell.classList.remove("tab-grid");
+    appShell.classList.add("tab-graph");
+  }
+
+  localStorage.setItem("pathforge_active_tab", tabName);
+}
+
+// Add tab button click event listeners
+tabButtons.forEach(btn => {
+  btn.addEventListener("click", () => {
+    switchTab(btn.dataset.tab);
+  });
+});
+
+// Restore saved tab on page load
+const savedTab = localStorage.getItem("pathforge_active_tab");
+if (savedTab === "grid" || savedTab === "graph") {
+  switchTab(savedTab);
+} else {
+  switchTab("grid");
+}
+
 createGrid();
 updateAlgorithmLabel();
 renderComparisonTable();
-renderGraph();
+resetGraphLab();
 renderGraphComparisonTable();
+

@@ -18,6 +18,9 @@ async function runSelectedAlgorithm() {
   setControlsDisabled(true);
 
   const selectedAlgorithm = algorithmSelect.value;
+  if (!gridCompareList.includes(selectedAlgorithm)) {
+    gridCompareList.push(selectedAlgorithm);
+  }
 
   const runResult = runAlgorithmByName(selectedAlgorithm);
   updateStatsFromRun(selectedAlgorithm, runResult);
@@ -78,6 +81,7 @@ async function animateRunResult(result) {
 async function runAllAlgorithms() {
   clearAlgorithmPaint();
   resetStats();
+  gridCompareList = [...gridAlgorithms];
   clearComparisonTable();
   setControlsDisabled(true);
 
@@ -120,4 +124,13 @@ function updateAlgorithmLabel() {
   const selectedOption = algorithmSelect.options[algorithmSelect.selectedIndex];
   algorithmStat.textContent = selectedOption.textContent;
   algorithmInfo.textContent = algorithmInfoText[algorithmSelect.value];
+
+  const complexity = gridComplexity[algorithmSelect.value];
+  if (complexity) {
+    timeComplexity.textContent = complexity.time;
+    spaceComplexity.textContent = complexity.space;
+  } else {
+    timeComplexity.textContent = "-";
+    spaceComplexity.textContent = "-";
+  }
 }

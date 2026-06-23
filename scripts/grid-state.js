@@ -175,7 +175,14 @@ function setControlsDisabled(isDisabled) {
 function renderComparisonTable() {
   comparisonBody.innerHTML = "";
 
-  for (const algorithm of gridAlgorithms) {
+  if (gridCompareList.length === 0) {
+    const row = document.createElement("tr");
+    row.innerHTML = `<td colspan="7" style="text-align: center; color: var(--muted); padding: 16px;">No algorithms added to compare. Run an algorithm or add one above.</td>`;
+    comparisonBody.appendChild(row);
+    return;
+  }
+
+  for (const algorithm of gridCompareList) {
     const stats = comparisonStats[algorithm];
     const row = document.createElement("tr");
 
@@ -186,6 +193,7 @@ function renderComparisonTable() {
       <td>${stats ? stats.length : "-"}</td>
       <td>${stats ? stats.cost : "-"}</td>
       <td>${stats ? stats.runtime : "-"}</td>
+      <td><button class="remove-compare-btn" data-algo="${algorithm}" type="button">Remove</button></td>
     `;
 
     comparisonBody.appendChild(row);
