@@ -116,43 +116,6 @@ clearGraphButton.addEventListener("click", () => {
   clearCustomGraph();
 });
 
-// Comparison List Management Event Listeners
-addGridCompare.addEventListener("change", () => {
-  const selectedAlgo = addGridCompare.value;
-  if (selectedAlgo && !gridCompareList.includes(selectedAlgo)) {
-    gridCompareList.push(selectedAlgo);
-    renderComparisonTable();
-  }
-  addGridCompare.value = "";
-});
-
-addGraphCompare.addEventListener("change", () => {
-  const selectedAlgo = addGraphCompare.value;
-  if (selectedAlgo && !graphCompareList.includes(selectedAlgo)) {
-    graphCompareList.push(selectedAlgo);
-    renderGraphComparisonTable();
-  }
-  addGraphCompare.value = "";
-});
-
-comparisonBody.addEventListener("click", (event) => {
-  const removeBtn = event.target.closest(".remove-compare-btn");
-  if (removeBtn) {
-    const algo = removeBtn.dataset.algo;
-    gridCompareList = gridCompareList.filter(item => item !== algo);
-    renderComparisonTable();
-  }
-});
-
-graphComparisonBody.addEventListener("click", (event) => {
-  const removeBtn = event.target.closest(".remove-compare-btn");
-  if (removeBtn) {
-    const algo = removeBtn.dataset.algo;
-    graphCompareList = graphCompareList.filter(item => item !== algo);
-    renderGraphComparisonTable();
-  }
-});
-
 // Tab switching functionality
 const tabButtons = document.querySelectorAll(".tab-btn");
 const appShell = document.querySelector(".app-shell");
