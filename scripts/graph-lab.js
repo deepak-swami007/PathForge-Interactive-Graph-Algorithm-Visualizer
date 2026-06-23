@@ -17,12 +17,10 @@ function renderGraph() {
   const isFlowMode = selectedAlgorithm === "edmondsKarp";
   const isTopoMode = selectedAlgorithm === "topologicalSort";
   const isBridgeMode = selectedAlgorithm === "tarjanBridges";
-  const isDirectedMode = !isCustomGraph && (isSccMode || isFlowMode || isTopoMode);
-  const edgesToRender = isCustomGraph
-    ? graphEdges
-    : (isSccMode
-      ? directedGraphEdges
-      : (isFlowMode ? flowGraphEdges : (isTopoMode ? dagEdges : (isBridgeMode ? bridgeGraphEdges : graphEdges))));
+  const isDirectedMode = isSccMode || isFlowMode || isTopoMode;
+  const edgesToRender = isSccMode
+    ? directedGraphEdges
+    : (isFlowMode ? flowGraphEdges : (isTopoMode ? dagEdges : (isBridgeMode ? bridgeGraphEdges : graphEdges)));
 
   if (isDirectedMode) {
     const defs = createSvgElement("defs");
@@ -414,8 +412,7 @@ function edmondsKarp(source = "A", sink = "F") {
 
 function topologicalSort() {
   const nodeIds = graphNodes.map((node) => node.id);
-  const topoEdges = isCustomGraph ? graphEdges.map(e => ({ from: e.from, to: e.to })) : dagEdges;
-  const adjacency = buildDirectedAdjacency(topoEdges);
+  const adjacency = buildDirectedAdjacency(dagEdges);
   const indegree = {};
   const queue = [];
   const order = [];
@@ -424,7 +421,7 @@ function topologicalSort() {
     indegree[nodeId] = 0;
   }
 
-  for (const edge of topoEdges) {
+  for (const edge of dagEdges) {
     indegree[edge.to]++;
   }
 
@@ -469,8 +466,7 @@ function buildUndirectedAdjacency(edges) {
 }
 
 function tarjanBridges() {
-  const bridgeEdges = isCustomGraph ? graphEdges.map(e => ({ from: e.from, to: e.to })) : bridgeGraphEdges;
-  const adjacency = buildUndirectedAdjacency(bridgeEdges);
+  const adjacency = buildUndirectedAdjacency(bridgeGraphEdges);
   const visited = new Set();
   const discovery = {};
   const low = {};
@@ -566,9 +562,7 @@ async function executeGraphAlgorithm(selectedAlgorithm) {
   } else if (selectedAlgorithm === "floydWarshall") {
     result = floydWarshall();
   } else if (selectedAlgorithm === "edmondsKarp") {
-    const srcId = graphNodes.length > 0 ? graphNodes[0].id : "A";
-    const sinkId = graphNodes.length > 1 ? graphNodes[graphNodes.length - 1].id : "F";
-    result = edmondsKarp(srcId, sinkId);
+    result = edmondsKarp();
   } else if (selectedAlgorithm === "topologicalSort") {
     result = topologicalSort();
   } else if (selectedAlgorithm === "tarjanBridges") {
@@ -686,12 +680,12 @@ async function executeGraphAlgorithm(selectedAlgorithm) {
     graphAlgorithmStat.textContent = graphAlgorithmLabel;
     graphStatusStat.textContent = result.hasCycle ? "Cycle detected" : "Order complete";
     graphWeightStat.textContent = `${result.order.length} nodes`;
-    graphEdgesStat.textContent = `${isCustomGraph ? graphEdges.length : dagEdges.length} edges`;
+    graphEdgesStat.textContent = `${dagEdges.length} edges`;
     graphRuntimeStat.textContent = runtimeText;
     graphComparisonStats[selectedAlgorithm] = {
       status: result.hasCycle ? "Cycle detected" : "Order complete",
       result: `${result.order.length} nodes`,
-      items: `${isCustomGraph ? graphEdges.length : dagEdges.length} edges`,
+      items: `${dagEdges.length} edges`,
       runtime: runtimeText,
     };
     renderGraphComparisonTable();
@@ -719,12 +713,12 @@ async function executeGraphAlgorithm(selectedAlgorithm) {
     graphAlgorithmStat.textContent = graphAlgorithmLabel;
     graphStatusStat.textContent = "Bridges complete";
     graphWeightStat.textContent = `${result.bridges.length} bridges`;
-    graphEdgesStat.textContent = `${isCustomGraph ? graphEdges.length : bridgeGraphEdges.length} edges`;
+    graphEdgesStat.textContent = `${bridgeGraphEdges.length} edges`;
     graphRuntimeStat.textContent = runtimeText;
     graphComparisonStats[selectedAlgorithm] = {
       status: "Bridges complete",
       result: `${result.bridges.length} bridges`,
-      items: `${isCustomGraph ? graphEdges.length : bridgeGraphEdges.length} edges`,
+      items: `${bridgeGraphEdges.length} edges`,
       runtime: runtimeText,
     };
     renderGraphComparisonTable();
