@@ -38,6 +38,7 @@ const runGraphAllButton = document.getElementById("runGraphAllBtn");
 const resetGraphButton = document.getElementById("resetGraphBtn");
 const graphEditToolSelect = document.getElementById("graphEditTool");
 const graphModeSelect = document.getElementById("graphMode");
+const graphSpeedSelect = document.getElementById("graphSpeed");
 const clearGraphButton = document.getElementById("clearGraphBtn");
 const graphEditorHint = document.getElementById("graphEditorHint");
 const graphEditorHintText = document.getElementById("graphEditorHintText");
@@ -188,3 +189,20 @@ let graphCompareList = ["prim"];
 
 const addGridCompare = document.getElementById("addGridCompare");
 const addGraphCompare = document.getElementById("addGraphCompare");
+
+let isPaused = false;
+let resumeResolve = null;
+
+async function checkPause() {
+  if (isPaused) {
+    await new Promise(resolve => { resumeResolve = resolve; });
+  }
+}
+
+function forceResume() {
+  isPaused = false;
+  if (resumeResolve) {
+    resumeResolve();
+    resumeResolve = null;
+  }
+}

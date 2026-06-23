@@ -21,10 +21,12 @@ function renderGraph() {
   const isFlowMode = selectedAlgorithm === "edmondsKarp";
   const isTopoMode = selectedAlgorithm === "topologicalSort";
   const isBridgeMode = selectedAlgorithm === "tarjanBridges";
-  const isDirectedMode = isSccMode || isFlowMode || isTopoMode;
-  const edgesToRender = isSccMode
-    ? directedGraphEdges
-    : (isFlowMode ? flowGraphEdges : (isTopoMode ? dagEdges : (isBridgeMode ? bridgeGraphEdges : graphEdges)));
+  const isDirectedMode = !isCustomGraph && (isSccMode || isFlowMode || isTopoMode);
+  const edgesToRender = isCustomGraph
+    ? graphEdges
+    : (isSccMode
+      ? directedGraphEdges
+      : (isFlowMode ? flowGraphEdges : (isTopoMode ? dagEdges : (isBridgeMode ? bridgeGraphEdges : graphEdges))));
 
   if (isDirectedMode) {
     const defs = createSvgElement("defs");
@@ -79,11 +81,11 @@ function renderGraph() {
     const midX = (fromNode.x + toNode.x) / 2;
     const midY = (fromNode.y + toNode.y) / 2;
     const labelBg = createSvgElement("rect");
-    labelBg.setAttribute("x", midX - 10);
-    labelBg.setAttribute("y", midY - 9);
-    labelBg.setAttribute("width", 20);
-    labelBg.setAttribute("height", 18);
-    labelBg.setAttribute("rx", 4);
+    labelBg.setAttribute("x", midX - 8);
+    labelBg.setAttribute("y", midY - 7);
+    labelBg.setAttribute("width", 16);
+    labelBg.setAttribute("height", 14);
+    labelBg.setAttribute("rx", 3);
     labelBg.setAttribute("class", "edge-label-bg");
     graphSvg.appendChild(labelBg);
 
@@ -102,7 +104,7 @@ function renderGraph() {
     const editableClass = isCustomGraph ? " editable" : "";
     circle.setAttribute("cx", node.x);
     circle.setAttribute("cy", node.y);
-    circle.setAttribute("r", 25);
+    circle.setAttribute("r", 14);
     const baseClass = selectedGraphNodes.has(node.id) ? `graph-node active${sccClass}` : `graph-node${sccClass}`;
     circle.setAttribute("class", baseClass + editableClass + (isPending ? " pending-edge" : ""));
     graphSvg.appendChild(circle);
@@ -424,7 +426,8 @@ function edmondsKarp(source = "A", sink = "F") {
 
 function topologicalSort() {
   const nodeIds = graphNodes.map((node) => node.id);
-  const adjacency = buildDirectedAdjacency(dagEdges);
+  const topoEdges = isCustomGraph ? graphEdges.map(e => ({ from: e.from, to: e.to })) : dagEdges;
+  const adjacency = buildDirectedAdjacency(topoEdges);
   const indegree = {};
   const queue = [];
   const order = [];
@@ -433,7 +436,7 @@ function topologicalSort() {
     indegree[nodeId] = 0;
   }
 
-  for (const edge of dagEdges) {
+  for (const edge of topoEdges) {
     indegree[edge.to]++;
   }
 
@@ -478,7 +481,8 @@ function buildUndirectedAdjacency(edges) {
 }
 
 function tarjanBridges() {
-  const adjacency = buildUndirectedAdjacency(bridgeGraphEdges);
+  const bridgeEdges = isCustomGraph ? graphEdges.map(e => ({ from: e.from, to: e.to })) : bridgeGraphEdges;
+  const adjacency = buildUndirectedAdjacency(bridgeEdges);
   const visited = new Set();
   const discovery = {};
   const low = {};
@@ -609,7 +613,9 @@ async function executeGraphAlgorithm(selectedAlgorithm, sessionId) {
   } else if (selectedAlgorithm === "floydWarshall") {
     result = floydWarshall();
   } else if (selectedAlgorithm === "edmondsKarp") {
-    result = edmondsKarp();
+    const srcId = graphNodes.length > 0 ? graphNodes[0].id : "A";
+    const sinkId = graphNodes.length > 1 ? graphNodes[graphNodes.length - 1].id : "F";
+    result = edmondsKarp(srcId, sinkId);
   } else if (selectedAlgorithm === "topologicalSort") {
     result = topologicalSort();
   } else if (selectedAlgorithm === "tarjanBridges") {
@@ -727,21 +733,25 @@ async function executeGraphAlgorithm(selectedAlgorithm, sessionId) {
     renderGraph();
 
     for (const nodeId of result.order) {
+      if (sessionId !== graphAnimationId) return;
+      await checkPause();
+      if (sessionId !== graphAnimationId) return;
       selectedGraphNodes.add(nodeId);
       renderGraph();
-      await sleep(getAnimationDelay() * 6);
+      await sleep(getGraphAnimationDelay() * 6);
     }
 
+    if (sessionId !== graphAnimationId) return;
     renderTopologicalOrder(result.order);
     graphAlgorithmStat.textContent = graphAlgorithmLabel;
     graphStatusStat.textContent = result.hasCycle ? "Cycle detected" : "Order complete";
     graphWeightStat.textContent = `${result.order.length} nodes`;
-    graphEdgesStat.textContent = `${dagEdges.length} edges`;
+    graphEdgesStat.textContent = `${isCustomGraph ? graphEdges.length : dagEdges.length} edges`;
     graphRuntimeStat.textContent = runtimeText;
     graphComparisonStats[selectedAlgorithm] = {
       status: result.hasCycle ? "Cycle detected" : "Order complete",
       result: `${result.order.length} nodes`,
-      items: `${dagEdges.length} edges`,
+      items: `${isCustomGraph ? graphEdges.length : dagEdges.length} edges`,
       runtime: runtimeText,
     };
     renderGraphComparisonTable();
@@ -756,25 +766,29 @@ async function executeGraphAlgorithm(selectedAlgorithm, sessionId) {
     renderGraph();
 
     for (const bridge of result.bridges) {
+      if (sessionId !== graphAnimationId) return;
+      await checkPause();
+      if (sessionId !== graphAnimationId) return;
       selectedGraphEdges.add(makeEdgeKey(bridge.from, bridge.to));
       selectedGraphNodes.add(bridge.from);
       selectedGraphNodes.add(bridge.to);
       renderGraph();
-      await sleep(getAnimationDelay() * 6);
+      await sleep(getGraphAnimationDelay() * 6);
     }
 
+    if (sessionId !== graphAnimationId) return;
     graphMatrixOutput.innerHTML = result.bridges.length > 0
       ? `<strong>Bridge Edges:</strong> ${result.bridges.map((edge) => `${edge.from}-${edge.to}`).join(", ")}`
       : "<strong>Bridge Edges:</strong> None";
     graphAlgorithmStat.textContent = graphAlgorithmLabel;
     graphStatusStat.textContent = "Bridges complete";
     graphWeightStat.textContent = `${result.bridges.length} bridges`;
-    graphEdgesStat.textContent = `${bridgeGraphEdges.length} edges`;
+    graphEdgesStat.textContent = `${isCustomGraph ? graphEdges.length : bridgeGraphEdges.length} edges`;
     graphRuntimeStat.textContent = runtimeText;
     graphComparisonStats[selectedAlgorithm] = {
       status: "Bridges complete",
       result: `${result.bridges.length} bridges`,
-      items: `${bridgeGraphEdges.length} edges`,
+      items: `${isCustomGraph ? graphEdges.length : bridgeGraphEdges.length} edges`,
       runtime: runtimeText,
     };
     renderGraphComparisonTable();
@@ -833,6 +847,12 @@ function resetGraphLab() {
     graphSpaceComplexity.textContent = "-";
   }
 
+  // Re-enable controls if we were in the middle of an animation!
+  runGraphButton.disabled = false;
+  runGraphAllButton.disabled = false;
+  resetGraphButton.disabled = false;
+  graphAlgorithmSelect.disabled = false;
+
   graphStatusStat.textContent = "Ready";
   graphWeightStat.textContent = "0";
   graphEdgesStat.textContent = "0";
@@ -879,7 +899,7 @@ function getSvgCoords(event) {
 }
 
 function findNodeAt(svgX, svgY) {
-  const hitRadius = 30;
+  const hitRadius = 18;
   for (const node of graphNodes) {
     const dx = node.x - svgX;
     const dy = node.y - svgY;
