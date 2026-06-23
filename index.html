@@ -50,12 +50,17 @@
           <option value="erase">Erase</option>
         </select>
       </div>
+      <div id="gridWeightInputGroup" class="control-group" style="display: none;">
+        <label for="gridCustomWeight">Weight Cost (1-99)</label>
+        <input type="number" id="gridCustomWeight" min="1" max="99" value="5">
+      </div>
       <div class="control-group">
         <label for="speed">Animation Speed</label>
         <select id="speed">
-          <option value="fast">Fast</option>
+          <option value="high">High</option>
           <option value="normal" selected>Normal</option>
           <option value="slow">Slow</option>
+          <option value="verySlow">Very Slow</option>
         </select>
       </div>
       <div class="control-group">
@@ -70,6 +75,7 @@
       <div class="button-row">
         <button id="runBtn" type="button">Run</button>
         <button id="runAllBtn" type="button">Run All</button>
+        <button id="pauseBtn" type="button" disabled>Pause</button>
         <button id="loadPresetBtn" type="button">Load Preset</button>
         <button id="clearPathBtn" type="button">Clear Path</button>
         <button id="resetBtn" type="button">Reset</button>
@@ -209,6 +215,7 @@
           </div>
           <button id="runGraphBtn" type="button">Run Graph</button>
           <button id="runGraphAllBtn" type="button">Run Graph All</button>
+          <button id="pauseGraphBtn" type="button" disabled>Pause</button>
           <button id="resetGraphBtn" type="button">Reset Graph</button>
           <button id="clearGraphBtn" type="button">Clear Graph</button>
         </div>

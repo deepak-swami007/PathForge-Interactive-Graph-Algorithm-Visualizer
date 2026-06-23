@@ -1,3 +1,7 @@
+function getGraphAnimationDelay() {
+  return speedDelay[graphSpeedSelect.value] || speedDelay.normal;
+}
+
 function makeEdgeKey(from, to) {
   return [from, to].sort().join("-");
 }
@@ -523,37 +527,68 @@ async function runGraphAlgorithm() {
   graphStatusStat.textContent = "Running";
   runGraphButton.disabled = true;
   runGraphAllButton.disabled = true;
-  resetGraphButton.disabled = true;
   graphAlgorithmSelect.disabled = true;
 
-  const selectedAlgorithm = graphAlgorithmSelect.value;
-  await executeGraphAlgorithm(selectedAlgorithm);
-  runGraphButton.disabled = false;
-  runGraphAllButton.disabled = false;
+  // Keep resetGraphButton enabled!
   resetGraphButton.disabled = false;
-  graphAlgorithmSelect.disabled = false;
+
+  // Enable pause button!
+  document.getElementById("pauseGraphBtn").disabled = false;
+
+  graphAnimationId++;
+  const runSessionId = graphAnimationId;
+
+  const selectedAlgorithm = graphAlgorithmSelect.value;
+  await executeGraphAlgorithm(selectedAlgorithm, runSessionId);
+
+  if (runSessionId === graphAnimationId) {
+    runGraphButton.disabled = false;
+    runGraphAllButton.disabled = false;
+    resetGraphButton.disabled = false;
+    graphAlgorithmSelect.disabled = false;
+    document.getElementById("pauseGraphBtn").disabled = true;
+    document.getElementById("pauseGraphBtn").textContent = "Pause";
+    isPaused = false;
+  }
 }
 
 async function runAllGraphAlgorithms() {
   runGraphButton.disabled = true;
   runGraphAllButton.disabled = true;
-  resetGraphButton.disabled = true;
   graphAlgorithmSelect.disabled = true;
 
+  // Keep resetGraphButton enabled!
+  resetGraphButton.disabled = false;
+
+  // Enable pause button!
+  document.getElementById("pauseGraphBtn").disabled = false;
+
+  graphAnimationId++;
+  const runSessionId = graphAnimationId;
+
   for (const algorithm of Object.keys(graphAlgorithmLabels)) {
+    if (runSessionId !== graphAnimationId) break;
     graphAlgorithmSelect.value = algorithm;
-    await executeGraphAlgorithm(algorithm);
+    await executeGraphAlgorithm(algorithm, runSessionId);
+    if (runSessionId !== graphAnimationId) break;
+    await checkPause();
+    if (runSessionId !== graphAnimationId) break;
     await sleep(160);
   }
 
-  graphStatusStat.textContent = "Graph Run All complete";
-  runGraphButton.disabled = false;
-  runGraphAllButton.disabled = false;
-  resetGraphButton.disabled = false;
-  graphAlgorithmSelect.disabled = false;
+  if (runSessionId === graphAnimationId) {
+    graphStatusStat.textContent = "Graph Run All complete";
+    runGraphButton.disabled = false;
+    runGraphAllButton.disabled = false;
+    resetGraphButton.disabled = false;
+    graphAlgorithmSelect.disabled = false;
+    document.getElementById("pauseGraphBtn").disabled = true;
+    document.getElementById("pauseGraphBtn").textContent = "Pause";
+    isPaused = false;
+  }
 }
 
-async function executeGraphAlgorithm(selectedAlgorithm) {
+async function executeGraphAlgorithm(selectedAlgorithm, sessionId) {
   const graphAlgorithmLabel = graphAlgorithmLabels[selectedAlgorithm];
   let result = null;
   const startTime = performance.now();
@@ -591,15 +626,19 @@ async function executeGraphAlgorithm(selectedAlgorithm) {
     renderGraph();
 
     for (let index = 0; index < result.components.length; index++) {
+      if (sessionId !== graphAnimationId) return;
+      await checkPause();
+      if (sessionId !== graphAnimationId) return;
       for (const nodeId of result.components[index]) {
         selectedGraphNodes.add(nodeId);
         sccGroupByNode[nodeId] = index;
       }
 
       renderGraph();
-      await sleep(getAnimationDelay() * 6);
+      await sleep(getGraphAnimationDelay() * 6);
     }
 
+    if (sessionId !== graphAnimationId) return;
     const nodeCount = result.components.reduce((total, component) => total + component.length, 0);
     graphAlgorithmStat.textContent = graphAlgorithmLabel;
     graphStatusStat.textContent = "SCC complete";
@@ -623,6 +662,7 @@ async function executeGraphAlgorithm(selectedAlgorithm) {
     renderGraph();
     renderDistanceMatrix(result.nodeIds, result.distances);
 
+    if (sessionId !== graphAnimationId) return;
     graphAlgorithmStat.textContent = graphAlgorithmLabel;
     graphStatusStat.textContent = "Matrix complete";
     graphWeightStat.textContent = `${result.nodeIds.length}x${result.nodeIds.length}`;
@@ -648,6 +688,9 @@ async function executeGraphAlgorithm(selectedAlgorithm) {
     renderGraph();
 
     for (const augmentingPath of result.augmentingPaths) {
+      if (sessionId !== graphAnimationId) return;
+      await checkPause();
+      if (sessionId !== graphAnimationId) return;
       for (let index = 0; index < augmentingPath.path.length - 1; index++) {
         const fromNode = augmentingPath.path[index];
         const toNode = augmentingPath.path[index + 1];
@@ -657,9 +700,10 @@ async function executeGraphAlgorithm(selectedAlgorithm) {
       }
 
       renderGraph();
-      await sleep(getAnimationDelay() * 6);
+      await sleep(getGraphAnimationDelay() * 6);
     }
 
+    if (sessionId !== graphAnimationId) return;
     graphAlgorithmStat.textContent = graphAlgorithmLabel;
     graphStatusStat.textContent = "Max flow complete";
     graphWeightStat.textContent = `Flow ${result.maxFlow}`;
@@ -744,13 +788,17 @@ async function executeGraphAlgorithm(selectedAlgorithm) {
   renderGraph();
 
   for (const edge of result.mstEdges) {
+    if (sessionId !== graphAnimationId) return;
+    await checkPause();
+    if (sessionId !== graphAnimationId) return;
     selectedGraphEdges.add(makeEdgeKey(edge.from, edge.to));
     selectedGraphNodes.add(edge.from);
     selectedGraphNodes.add(edge.to);
     renderGraph();
-    await sleep(getAnimationDelay() * 4);
+    await sleep(getGraphAnimationDelay() * 4);
   }
 
+  if (sessionId !== graphAnimationId) return;
   graphAlgorithmStat.textContent = graphAlgorithmLabel;
   graphStatusStat.textContent = "MST complete";
   graphWeightStat.textContent = `Weight ${result.totalWeight}`;
@@ -766,6 +814,11 @@ async function executeGraphAlgorithm(selectedAlgorithm) {
 }
 
 function resetGraphLab() {
+  graphAnimationId++; // Cancel running animation!
+  forceResume();
+  document.getElementById("pauseGraphBtn").textContent = "Pause";
+  document.getElementById("pauseGraphBtn").disabled = true;
+
   selectedGraphEdges = new Set();
   selectedGraphNodes = new Set();
   sccGroupByNode = {};

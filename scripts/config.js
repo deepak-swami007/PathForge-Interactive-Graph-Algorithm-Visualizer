@@ -43,9 +43,11 @@ const graphEditorHint = document.getElementById("graphEditorHint");
 const graphEditorHintText = document.getElementById("graphEditorHintText");
 
 let startCell = { row: 3, col: 4 };
-let targetCell = { row: 10, col: 15 };
+let targetCells = [{ row: 10, col: 15 }];
 let gridState = [];
 let comparisonStats = {};
+let gridAnimationId = 0;
+let graphAnimationId = 0;
 let selectedGraphEdges = new Set();
 let selectedGraphNodes = new Set();
 let sccGroupByNode = {};
@@ -68,9 +70,10 @@ const algorithmInfoText = {
 };
 
 const speedDelay = {
-  fast: 4,
-  normal: 12,
-  slow: 40,
+  high: 12,
+  normal: 40,
+  slow: 100,
+  verySlow: 250,
 };
 
 const algorithmLabels = {

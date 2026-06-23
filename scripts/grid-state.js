@@ -27,7 +27,7 @@ function applyPreset(presetName) {
 
   if (presetName === "clean") {
     startCell = { row: 3, col: 4 };
-    targetCell = { row: 10, col: 15 };
+    targetCells = [{ row: 10, col: 15 }];
     refreshGridPaint();
     statusStat.textContent = "Clean grid loaded";
     return;
@@ -35,7 +35,7 @@ function applyPreset(presetName) {
 
   if (presetName === "weighted-detour") {
     startCell = { row: 6, col: 2 };
-    targetCell = { row: 6, col: 17 };
+    targetCells = [{ row: 6, col: 17 }];
 
     const weightedCells = [];
 
@@ -50,7 +50,7 @@ function applyPreset(presetName) {
 
   if (presetName === "blocked-maze") {
     startCell = { row: 2, col: 2 };
-    targetCell = { row: 11, col: 17 };
+    targetCells = [{ row: 11, col: 17 }];
 
     const walls = [];
 
@@ -76,7 +76,7 @@ function applyPreset(presetName) {
 
   if (presetName === "bomb-trap") {
     startCell = { row: 10, col: 2 };
-    targetCell = { row: 3, col: 17 };
+    targetCells = [{ row: 3, col: 17 }];
 
     const bombs = [
       { row: 7, col: 7 },
@@ -100,12 +100,18 @@ function applyPreset(presetName) {
   }
 
   gridState[startCell.row][startCell.col] = "empty";
-  gridState[targetCell.row][targetCell.col] = "empty";
+  for (const target of targetCells) {
+    gridState[target.row][target.col] = "empty";
+  }
   refreshGridPaint();
 }
 
 function isSameCell(first, second) {
   return first.row === second.row && first.col === second.col;
+}
+
+function isTargetCell(row, col) {
+  return targetCells.some(cell => cell.row === row && cell.col === col);
 }
 
 function getCellElement(row, col) {
@@ -114,21 +120,32 @@ function getCellElement(row, col) {
 
 function paintCell(cell, row, col) {
   cell.className = "cell";
+  cell.textContent = "";
 
   if (isSameCell({ row, col }, startCell)) {
     cell.classList.add("start");
     return;
   }
 
-  if (isSameCell({ row, col }, targetCell)) {
+  if (isTargetCell(row, col)) {
     cell.classList.add("target");
+    if (targetCells.length > 1) {
+      const idx = targetCells.findIndex(t => t.row === row && t.col === col);
+      cell.textContent = `T${idx + 1}`;
+    }
     return;
   }
 
   const cellType = gridState[row][col];
 
   if (cellType !== "empty") {
-    cell.classList.add(cellType);
+    if (cellType.startsWith("weight")) {
+      cell.classList.add("weight");
+      const weightVal = cellType === "weight" ? 5 : parseInt(cellType.split("_")[1], 10);
+      cell.textContent = weightVal;
+    } else {
+      cell.classList.add(cellType);
+    }
   }
 }
 
@@ -159,17 +176,26 @@ function resetStats() {
 function setControlsDisabled(isDisabled) {
   runButton.disabled = isDisabled;
   runAllButton.disabled = isDisabled;
-  loadPresetButton.disabled = isDisabled;
-  clearPathButton.disabled = isDisabled;
-  resetButton.disabled = isDisabled;
   algorithmSelect.disabled = isDisabled;
   cellToolSelect.disabled = isDisabled;
   speedSelect.disabled = isDisabled;
   presetSelect.disabled = isDisabled;
+
+  // Keep reset, clear path, and preset buttons enabled at all times!
+  loadPresetButton.disabled = false;
+  clearPathButton.disabled = false;
+  resetButton.disabled = false;
+
+  // Enable pause button only during active runs!
+  document.getElementById("pauseBtn").disabled = !isDisabled;
+
   graphAlgorithmSelect.disabled = isDisabled;
   runGraphButton.disabled = isDisabled;
   runGraphAllButton.disabled = isDisabled;
-  resetGraphButton.disabled = isDisabled;
+  resetGraphButton.disabled = false; // Keep reset graph button enabled!
+
+  // Enable pause graph button only during active graph runs!
+  document.getElementById("pauseGraphBtn").disabled = !isDisabled;
 }
 
 function renderComparisonTable() {
@@ -224,7 +250,14 @@ function canVisit(row, col) {
 }
 
 function getCellCost(row, col) {
-  return gridState[row][col] === "weight" ? 5 : 1;
+  const cellType = gridState[row][col];
+  if (cellType === "weight") {
+    return 5;
+  }
+  if (cellType && cellType.startsWith("weight_")) {
+    return parseInt(cellType.split("_")[1], 10) || 5;
+  }
+  return 1;
 }
 
 function makeKey(row, col) {
