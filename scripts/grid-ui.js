@@ -29,9 +29,6 @@ async function runSelectedAlgorithm() {
     gridCompareList.push(selectedAlgorithm);
   }
 
-  gridAnimationId++;
-  const runSessionId = gridAnimationId;
-
   const runResult = runAlgorithmByName(selectedAlgorithm);
   updateStatsFromRun(selectedAlgorithm, runResult);
   await animateRunResult(runResult, runSessionId);

@@ -16,10 +16,10 @@
       </div>
       <nav class="tab-navigation" aria-label="Visualizer Modes">
         <button class="tab-btn active" data-tab="grid" type="button">
-          Grid Lab
+          <span class="tab-icon">🧭</span> Grid Lab
         </button>
         <button class="tab-btn" data-tab="graph" type="button">
-          Graph Lab
+          <span class="tab-icon">🕸️</span> Graph Lab
         </button>
       </nav>
     </div>
@@ -211,15 +211,6 @@
               <option value="edmondsKarp">Edmonds-Karp Max Flow</option>
               <option value="topologicalSort">Topological Sort</option>
               <option value="tarjanBridges">Tarjan Bridges</option>
-            </select>
-          </div>
-          <div class="control-group">
-            <label for="graphSpeed">Animation Speed</label>
-            <select id="graphSpeed">
-              <option value="high">High</option>
-              <option value="normal" selected>Normal</option>
-              <option value="slow">Slow</option>
-              <option value="verySlow">Very Slow</option>
             </select>
           </div>
           <button id="runGraphBtn" type="button">Run Graph</button>

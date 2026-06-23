@@ -90,6 +90,10 @@ input {
   box-shadow: 0 4px 12px rgba(37, 99, 235, 0.12), 0 1px 3px rgba(37, 99, 235, 0.08);
 }
 
+.tab-icon {
+  font-size: 16px;
+}
+
 
 .eyebrow {
   margin: 0 0 6px;
@@ -491,24 +495,24 @@ tbody tr:last-child td {
 
 .graph-edge {
   stroke: #94a3b8;
-  stroke-width: 2;
+  stroke-width: 3;
   stroke-linecap: round;
 }
 
 .graph-edge.selected {
   stroke: var(--start);
-  stroke-width: 3.5;
+  stroke-width: 4.5;
 }
 
 .graph-edge.directed {
   stroke: #64748b;
-  stroke-width: 1.8;
+  stroke-width: 2.2;
 }
 
 .graph-node {
   fill: #ffffff;
   stroke: var(--primary);
-  stroke-width: 2.5;
+  stroke-width: 3;
 }
 
 .graph-node.active {
@@ -538,7 +542,7 @@ tbody tr:last-child td {
 
 .graph-label {
   fill: var(--text);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 700;
   text-anchor: middle;
   dominant-baseline: middle;
@@ -547,7 +551,7 @@ tbody tr:last-child td {
 
 .edge-label {
   fill: var(--muted);
-  font-size: 8.5px;
+  font-size: 10px;
   font-weight: 700;
   text-anchor: middle;
   dominant-baseline: middle;
